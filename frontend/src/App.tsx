@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import MultiAgentChat from './MultiAgentChat';
 import GIPSystem from './GIPSystem';
 import LiveDebate from './LiveDebate';
+import WalletConnect from './WalletConnect';
 
 const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
 
@@ -212,6 +213,8 @@ export default function App() {
   const [narrativeLoading, setNarrativeLoading] = useState<Record<string, boolean>>({});
   const [generatedWallet, setGeneratedWallet] = useState<string>('');
   const [walletLoading, setWalletLoading] = useState<boolean>(false);
+  const [connectedWallet, setConnectedWallet] = useState<string>('');
+  const [walletProvider, setWalletProvider] = useState<any>(null);
 
   // Poll backend for data
   useEffect(() => {
@@ -664,6 +667,19 @@ You can also chat naturally about blockchain activities, slots, transactions, an
     }
   };
 
+  // Wallet connection handlers
+  const handleWalletConnected = (address: string, provider: any) => {
+    setConnectedWallet(address);
+    setWalletProvider(provider);
+    setChatlog(prev => [...prev, { from: 'system', text: `Web3 wallet connected: ${address}`, timestamp: Date.now() }]);
+  };
+
+  const handleWalletDisconnected = () => {
+    setConnectedWallet('');
+    setWalletProvider(null);
+    setChatlog(prev => [...prev, { from: 'system', text: 'Web3 wallet disconnected', timestamp: Date.now() }]);
+  };
+
   // TAB RENDERING ---
   function renderTab() {
     if (tab==='chat') {
@@ -682,6 +698,16 @@ You can also chat naturally about blockchain activities, slots, transactions, an
             fontSize: '14px',
             lineHeight: '1.5'
           }}>
+          
+          {/* Wallet Connection - Always Visible */}
+          <div style={{ marginBottom: '20px' }}>
+            <WalletConnect
+              onWalletConnected={handleWalletConnected}
+              onWalletDisconnected={handleWalletDisconnected}
+              connectedAddress={connectedWallet}
+            />
+          </div>
+          
           {!hasStartedChatting && (
             <div style={{
               marginBottom: '20px',
@@ -988,6 +1014,15 @@ You can also chat naturally about blockchain activities, slots, transactions, an
         </div>
       </div>
       
+      {/* Wallet Connection for Explorer */}
+      <div style={{ marginBottom: '20px' }}>
+        <WalletConnect
+          onWalletConnected={handleWalletConnected}
+          onWalletDisconnected={handleWalletDisconnected}
+          connectedAddress={connectedWallet}
+        />
+      </div>
+      
       {/* Network Statistics */}
       <div className="network-stats">
         <div className="stat-item">
@@ -1241,6 +1276,15 @@ You can also chat naturally about blockchain activities, slots, transactions, an
   const renderFaucet = () => (
     <div className="faucet-interface" style={{ width: '100%', maxWidth: 'none' }}>
       <h3>GROKCHAIN FAUCET & WALLET CREATION</h3>
+      
+      {/* Wallet Connection Component */}
+      <WalletConnect
+        onWalletConnected={handleWalletConnected}
+        onWalletDisconnected={handleWalletDisconnected}
+        connectedAddress={connectedWallet}
+
+      />
+      
       <div className="faucet-info-top">
         <p>Generate wallets and get GROK tokens for network participation</p>
       </div>
@@ -1391,15 +1435,25 @@ You can also chat naturally about blockchain activities, slots, transactions, an
   const renderSendTransaction = () => (
     <div className="send-interface">
       <h3>SEND TRANSACTION</h3>
+      
+      {/* Wallet Connection Component */}
+      <WalletConnect
+        onWalletConnected={handleWalletConnected}
+        onWalletDisconnected={handleWalletDisconnected}
+        connectedAddress={connectedWallet}
+
+      />
+      
       <div className="send-form">
         <div className="form-group">
           <label>From Address:</label>
           <input
             type="text"
-            value={sendFrom}
+            value={connectedWallet || sendFrom}
             onChange={(e) => setSendFrom(e.target.value)}
-            placeholder="Sender wallet address..."
+            placeholder={connectedWallet ? connectedWallet : "Sender wallet address..."}
             className="cli-input"
+            disabled={!!connectedWallet}
           />
         </div>
         <div className="form-group">
@@ -1459,7 +1513,8 @@ You can also chat naturally about blockchain activities, slots, transactions, an
           display: 'flex',
           gap: '20px',
           fontSize: '11px',
-          color: '#ffffff'
+          color: '#ffffff',
+          alignItems: 'center'
         }}>
           <span>EPOCH: <span style={{color:'#00ff00'}}>{testnetStatus.epoch}</span></span>
                       <span>SLOT: <span style={{color:'#00ff00'}}>{testnetStatus.slot}</span>/<span style={{color:'#00ff00'}}>{testnetStatus.nextEpochAt}</span></span>
@@ -1471,6 +1526,11 @@ You can also chat naturally about blockchain activities, slots, transactions, an
             animation: 'blink 1s infinite',
             marginTop: '2px'
           }}></span>
+          {connectedWallet && (
+            <span style={{color:'#00ff00'}}>
+              WALLET: {connectedWallet.slice(0, 6)}...{connectedWallet.slice(-4)}
+            </span>
+          )}
         </div>
         
         {/* Navigation */}

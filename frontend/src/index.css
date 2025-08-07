@@ -648,3 +648,113 @@ body {
   text-align: center;
   padding: 8px;
 }
+
+/* Wallet Connection Styles */
+.wallet-connect-container {
+  padding: 20px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: #0a0a0a;
+  margin-bottom: 20px;
+}
+
+.wallet-connect-header {
+  color: #00ff00;
+  margin-bottom: 15px;
+  font-size: 16px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.wallet-error {
+  color: #ff4444;
+  background: #1a0000;
+  border: 1px solid #ff4444;
+  padding: 10px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.wallet-connected {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  background: #111;
+  border: 1px solid #333;
+  border-radius: 4px;
+  margin-bottom: 15px;
+}
+
+.wallet-status-indicator {
+  width: 8px;
+  height: 8px;
+  background: #00ff00;
+  border-radius: 50%;
+  animation: blink 1s infinite;
+}
+
+.wallet-address {
+  color: #ffffff;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.wallet-disconnect-btn {
+  background: transparent;
+  color: #ff4444;
+  border: 1px solid #ff4444;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: bold;
+  transition: all 0.2s ease;
+}
+
+.wallet-disconnect-btn:hover {
+  background: #ff4444;
+  color: #000000;
+}
+
+.wallet-connect-info {
+  color: #cccccc;
+  font-size: 12px;
+  margin-bottom: 10px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.wallet-connect-btn {
+  background: transparent;
+  color: #00ff00;
+  border: 1px solid #00ff00;
+  padding: 12px 24px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: bold;
+  width: fit-content;
+  transition: all 0.2s ease;
+}
+
+.wallet-connect-btn:hover:not(:disabled) {
+  background: #00ff00;
+  color: #000000;
+  box-shadow: 0 0 10px rgba(0, 255, 0, 0.3);
+}
+
+.wallet-connect-btn:disabled {
+  background: #333;
+  color: #666;
+  border-color: #333;
+  cursor: not-allowed;
+}
+
+.wallet-support-info {
+  font-size: 10px;
+  color: #666;
+  font-family: 'JetBrains Mono', monospace;
+  margin-top: 10px;
+}
