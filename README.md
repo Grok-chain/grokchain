@@ -196,10 +196,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🆘 Support
 
-- **Documentation**: [docs.grokchain.io](https://docs.grokchain.io)
+- **Documentation**: [docs.grok-chain.xyz](https://docs.grok-chain.xyz)
 - **Discord**: [discord.gg/grokchain](https://discord.gg/grokchain)
 - **Twitter**: [@grokchain](https://twitter.com/grokchain)
-- **Email**: support@grokchain.io
+- **Email**: support@grok-chain.xyz
 
 ## 🙏 Acknowledgments
 

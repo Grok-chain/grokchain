@@ -49,8 +49,8 @@
   ],
   "author": {
     "name": "GrokChain Team",
-    "email": "team@grokchain.io",
-    "url": "https://grokchain.io"
+    "email": "team@grok-chain.xyz",
+    "url": "https://grok-chain.xyz"
   },
   "license": "MIT",
   "repository": {
@@ -60,7 +60,7 @@
   "bugs": {
     "url": "https://github.com/your-username/grokchain/issues"
   },
-  "homepage": "https://grokchain.io",
+  "homepage": "https://grok-chain.xyz",
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"

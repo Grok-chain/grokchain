@@ -18,7 +18,7 @@ We take security vulnerabilities seriously. If you discover a security issue, pl
 ### 1. **DO NOT** create a public GitHub issue
 Security vulnerabilities should be reported privately to prevent exploitation.
 
-### 2. Email us at security@grokchain.io
+### 2. Email us at security@grok-chain.xyz
 Include the following information:
 - **Type of issue** (buffer overflow, SQL injection, cross-site scripting, etc.)
 - **Full paths of source file(s) related to the vulnerability**
@@ -121,8 +121,8 @@ We conduct regular security audits with leading firms:
 ## Contact Information
 
 ### Security Team
-- **Email**: security@grokchain.io
-- **PGP Key**: [security-pgp-key.asc](https://grokchain.io/security-pgp-key.asc)
+- **Email**: security@grok-chain.xyz
+- **PGP Key**: [security-pgp-key.asc](https://grok-chain.xyz/security-pgp-key.asc)
 - **Emergency**: +1-XXX-XXX-XXXX (24/7)
 
 ### Responsible Disclosure
