@@ -299,7 +299,7 @@ export default function App() {
           if (nextFrame >= GROKCHAIN_ASCII_FRAMES.length) {
                           // Enter pause phase - show clean logo for 10 seconds
               isPaused = true;
-              pauseTimeout = setTimeout(() => {
+              pauseTimeout = window.setTimeout(() => {
                 isPaused = false;
                 setLogoFrame(1); // Resume glitch animation from frame 1
               }, 3000); // 3 second delay (reduced from 10 seconds)

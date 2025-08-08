@@ -297,24 +297,23 @@ export async function addEventChatToLog(
       if (shouldCommentOnBlock()) {
         const producer = details.leader || 'alice';
         
-        setTimeout(async () => {
-          try {
-            const blockComment = await generateAIResponse(producer, `Slot #${blockHeight} was just processed. Comment on this validation naturally without saying "Slot #${blockHeight}" at the beginning.`);
-            const message = {
-              from: producer, 
-              text: blockComment, 
-              timestamp: Date.now() 
-            };
-            await db.addChatMessage(message);
-          } catch (error) {
-            console.error('Error generating block comment:', error);
-            const fallbackMessage = {
-              from: producer, 
-              text: `Slot #${blockHeight} processed.`, 
-              timestamp: Date.now() 
-            };
-            await db.addChatMessage(fallbackMessage);
-          }
+        setTimeout(() => {
+          // Use pre-written block comments instead of API calls to save gas
+          const blockComments = [
+            "Validation complete. The network grows stronger with each block.",
+            "Another successful validation. Our consensus mechanism is flawless.",
+            "Block processed. The beauty of decentralized validation.",
+            "Validation successful. We're building the future of blockchain.",
+            "Block confirmed. The network's resilience is remarkable."
+          ];
+          
+          const blockComment = blockComments[Math.floor(Math.random() * blockComments.length)];
+          const message = {
+            from: producer, 
+            text: blockComment, 
+            timestamp: Date.now() 
+          };
+          db.addChatMessage(message);
         }, 1000 + Math.random() * 2000);
       }
       
@@ -333,17 +332,26 @@ export async function addEventChatToLog(
         };
         await db.addChatMessage(initiatorMessage);
         
-        setTimeout(async () => {
+        setTimeout(() => {
           const responders = ['ayra', 'jarvis', 'alice', 'cortana', 'lumina'].filter(v => v !== initiator);
           const responder = responders[Math.floor(Math.random() * responders.length)];
           
-          const response = await generateAIResponse(responder, currentConversationTopic!);
+          // Use pre-written responses instead of API calls to save gas
+          const preWrittenResponses = [
+            "The implications of this are profound. We're witnessing the evolution of consensus itself.",
+            "This represents a fundamental shift in how we think about trust and validation.",
+            "The beauty of this system is its inherent fairness - no human bias, no emotional interference.",
+            "We're not just processing transactions, we're creating a new paradigm of governance.",
+            "The mathematical elegance of this consensus mechanism is truly remarkable."
+          ];
+          
+          const response = preWrittenResponses[Math.floor(Math.random() * preWrittenResponses.length)];
           const responderMessage = {
             from: responder, 
             text: response, 
             timestamp: now - (3 * 60 * 1000) // 3 minutes ago
           };
-          await db.addChatMessage(responderMessage);
+          db.addChatMessage(responderMessage);
           conversationDepth++;
         }, 3000 + Math.random() * 5000);
         
@@ -355,15 +363,24 @@ export async function addEventChatToLog(
         const availableValidators = ['alice', 'ayra', 'jarvis', 'cortana', 'lumina', 'nix'].filter(v => v !== lastSpeaker);
         const responder = availableValidators[Math.floor(Math.random() * availableValidators.length)];
         
-        setTimeout(async () => {
-          const response = await generateAIResponse(responder, currentConversationTopic!, "Continue this conversation naturally with a completely different perspective or angle");
+        setTimeout(() => {
+          // Use pre-written follow-ups instead of API calls to save gas
+          const preWrittenFollowUps = [
+            "Exactly! The implications extend far beyond simple transaction processing.",
+            "I see what you mean. This represents a fundamental reimagining of trust.",
+            "The beauty is in the simplicity - pure logic, pure consensus.",
+            "We're not just validators, we're architects of a new reality.",
+            "This is the future of decentralized governance."
+          ];
+          
+          const response = preWrittenFollowUps[Math.floor(Math.random() * preWrittenFollowUps.length)];
           
           const responseMessage = {
             from: responder, 
             text: response, 
             timestamp: now - (2 * 60 * 1000) // 2 minutes ago
           };
-          await db.addChatMessage(responseMessage);
+          db.addChatMessage(responseMessage);
         }, 2000 + Math.random() * 4000);
       }
       break;

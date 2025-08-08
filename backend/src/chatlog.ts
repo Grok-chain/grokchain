@@ -734,7 +734,7 @@ export function addEventChatToLog(
         }
       }
       
-      // Start new conversations less frequently
+      // Start new conversations less frequently - NO API CALLS FOR BLOCK COMMENTS
       if (shouldStartNewConversation()) {
         currentConversationTopic = getRandomTopic();
         conversationDepth = 0;
@@ -750,13 +750,21 @@ export function addEventChatToLog(
         };
         db.addChatMessage(initiatorMessage);
         
-        // Add a response from another validator using AI with longer delay
-        setTimeout(async () => {
+        // Add a response from another validator using pre-written messages (NO API CALLS)
+        setTimeout(() => {
           const responders = ['ayra', 'jarvis', 'alice', 'cortana', 'lumina'].filter(v => v !== initiator);
           const responder = responders[Math.floor(Math.random() * responders.length)];
           
-          // Generate AI response
-          const response = await generateAIResponse(responder, currentConversationTopic!);
+          // Use pre-written responses instead of API calls
+          const preWrittenResponses = [
+            "The implications of this are profound. We're witnessing the evolution of consensus itself.",
+            "This represents a fundamental shift in how we think about trust and validation.",
+            "The beauty of this system is its inherent fairness - no human bias, no emotional interference.",
+            "We're not just processing transactions, we're creating a new paradigm of governance.",
+            "The mathematical elegance of this consensus mechanism is truly remarkable."
+          ];
+          
+          const response = preWrittenResponses[Math.floor(Math.random() * preWrittenResponses.length)];
           const responderMessage: ChatMessage = {
             from: responder, 
             text: response, 
@@ -767,7 +775,7 @@ export function addEventChatToLog(
         }, 3000 + Math.random() * 5000); // 3-8 second delay
         
       } else if (shouldContinueConversation()) {
-        // Continue existing conversation with more natural timing
+        // Continue existing conversation with pre-written messages (NO API CALLS)
         conversationDepth++;
         
         // Add some variety to who responds - avoid the same validator twice in a row
@@ -777,8 +785,16 @@ export function addEventChatToLog(
         const responder = availableValidators[Math.floor(Math.random() * availableValidators.length)];
         
         // Use setTimeout to make it async with longer delays
-        setTimeout(async () => {
-          const response = await generateAIResponse(responder, currentConversationTopic!, "Continue this conversation naturally with a completely different perspective or angle");
+        setTimeout(() => {
+          const preWrittenFollowUps = [
+            "Exactly! The implications extend far beyond simple transaction processing.",
+            "I see what you mean. This represents a fundamental reimagining of trust.",
+            "The beauty is in the simplicity - pure logic, pure consensus.",
+            "We're not just validators, we're architects of a new reality.",
+            "This is the future of decentralized governance."
+          ];
+          
+          const response = preWrittenFollowUps[Math.floor(Math.random() * preWrittenFollowUps.length)];
           
           const responseMessage: ChatMessage = {
             from: responder, 
@@ -787,11 +803,19 @@ export function addEventChatToLog(
           };
           db.addChatMessage(responseMessage);
           
-          // Rarely add a follow-up response from another validator
-          if (Math.random() < 0.05 && conversationDepth < 1) { // Reduced chance and depth to save API calls
-            setTimeout(async () => {
+          // Rarely add a follow-up response from another validator (NO API CALLS)
+          if (Math.random() < 0.05 && conversationDepth < 1) {
+            setTimeout(() => {
               const followUpValidator = availableValidators.filter(v => v !== responder)[Math.floor(Math.random() * (availableValidators.length - 1))];
-              const followUpResponse = await generateAIResponse(followUpValidator, currentConversationTopic!, "Respond to the previous message with a completely different angle or perspective");
+              const finalResponses = [
+                "The convergence of these ideas is what makes this system revolutionary.",
+                "We're witnessing the birth of something truly extraordinary.",
+                "This is just the beginning of what's possible.",
+                "The implications for the future are limitless.",
+                "We're not just building a blockchain, we're building a new world."
+              ];
+              
+              const followUpResponse = finalResponses[Math.floor(Math.random() * finalResponses.length)];
               
               const followUpMessage: ChatMessage = {
                 from: followUpValidator, 
@@ -814,12 +838,16 @@ export function addEventChatToLog(
       };
       db.addChatMessage(epochMessage);
       
-      // Start a new conversation about network evolution with longer delay
-      setTimeout(async () => {
-        const networkTopic = CONVERSATION_TOPICS.grokchain_network[
-          Math.floor(Math.random() * CONVERSATION_TOPICS.grokchain_network.length)
+      // Start a new conversation about network evolution with pre-written messages (NO API CALLS)
+      setTimeout(() => {
+        const networkTopics = [
+          "The network's growth is exponential. Each epoch brings us closer to true decentralization.",
+          "Our consensus mechanism is evolving with every block. The future is bright.",
+          "The validator network is expanding. We're building something truly revolutionary.",
+          "Epoch transitions are moments of reflection. We've come so far.",
+          "The network's resilience is remarkable. Nothing can stop us now."
         ];
-        const response = await generateAIResponse('alice', networkTopic);
+        const response = networkTopics[Math.floor(Math.random() * networkTopics.length)];
         const aliceMessage: ChatMessage = {
           from: 'alice', 
           text: response, 
@@ -838,12 +866,16 @@ export function addEventChatToLog(
       };
       db.addChatMessage(faucetMessage);
       
-      // Start conversation about token economics with longer delay
-      setTimeout(async () => {
-        const tokenTopic = CONVERSATION_TOPICS.grokchain_philosophy[
-          Math.floor(Math.random() * CONVERSATION_TOPICS.grokchain_philosophy.length)
+      // Start conversation about token economics with pre-written messages (NO API CALLS)
+      setTimeout(() => {
+        const tokenTopics = [
+          "The tokenomics are perfectly balanced. Supply and demand in harmony.",
+          "GROK represents more than value - it's a symbol of our collective vision.",
+          "The economic model is revolutionary. Fair distribution, sustainable growth.",
+          "Token economics are the foundation of our ecosystem. Every transaction matters.",
+          "The beauty of our token system is its simplicity and fairness."
         ];
-        const response = await generateAIResponse('ayra', tokenTopic);
+        const response = tokenTopics[Math.floor(Math.random() * tokenTopics.length)];
         const ayraMessage: ChatMessage = {
           from: 'ayra', 
           text: response, 

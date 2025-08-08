@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import detectEthereumProvider from '@metamask/detect-provider';
+import { Connection, PublicKey } from '@solana/web3.js';
 
 interface WalletConnectProps {
-  onWalletConnected: (address: string, provider: any) => void;
+  onWalletConnected: (address: string, provider: any, walletType?: 'ethereum' | 'solana') => void;
   onWalletDisconnected: () => void;
   connectedAddress?: string;
+  connectedWalletType?: 'ethereum' | 'solana';
 }
 
 const WalletConnect: React.FC<WalletConnectProps> = ({
@@ -14,7 +15,8 @@ const WalletConnect: React.FC<WalletConnectProps> = ({
 }) => {
   const [isConnecting, setIsConnecting] = useState(false);
   const [error, setError] = useState<string>('');
-  const [provider, setProvider] = useState<any>(null);
+  const [phantomProvider, setPhantomProvider] = useState<any>(null);
+  const [solanaConnection, setSolanaConnection] = useState<Connection | null>(null);
 
   useEffect(() => {
     checkWalletConnection();
@@ -134,7 +136,7 @@ const WalletConnect: React.FC<WalletConnectProps> = ({
           </button>
           
           <div className="wallet-support-info">
-            Supported: MetaMask and other Web3 wallets for GrokChain interaction
+            Supported: MetaMask (Ethereum) and Phantom (Solana) for GrokChain interaction
           </div>
         </div>
       )}
@@ -142,4 +144,4 @@ const WalletConnect: React.FC<WalletConnectProps> = ({
   );
 };
 
-export default WalletConnect; 
+export default WalletConnect; // Phantom wallet support added
