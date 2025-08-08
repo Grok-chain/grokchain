@@ -76,6 +76,31 @@ const GIPSystem: React.FC = () => {
     fetchGIPs();
   }, [activeTab]);
 
+  const sanitizeText = (text: string): string => {
+    if (!text) return '';
+    let t = text;
+    t = t.replace(/\bCA:[A-Za-z0-9]+\b/g, '[REDACTED]');
+    t = t.replace(/big\s*booty\s*latinas/gi, '[REDACTED]');
+    return t;
+  };
+
+  const isSystemAuthor = (author: string): boolean => {
+    const a = (author || '').toLowerCase();
+    return a === 'system' || a === 'admin';
+  };
+
+  const sanitizeGIP = (g: any) => ({
+    ...g,
+    title: sanitizeText(g?.title || ''),
+    author: sanitizeText(g?.author || ''),
+    summary: sanitizeText(g?.summary || ''),
+    fullProposal: sanitizeText(g?.fullProposal || ''),
+    debateThread: Array.isArray(g?.debateThread)
+      ? g.debateThread.map((m: any) => ({ ...m, message: sanitizeText(m?.message || ''), agentName: sanitizeText(m?.agentName || '') }))
+      : [],
+    tags: Array.isArray(g?.tags) ? g.tags.map((t: string) => sanitizeText(t)) : [],
+  });
+
   const fetchGIPs = async () => {
     setLoading(true);
     try {
@@ -83,7 +108,10 @@ const GIPSystem: React.FC = () => {
       const response = await fetch(`${API_BASE}${endpoint}`);
       const data = await response.json();
       if (data.success) {
-        setGips(data.gips);
+        const filtered = (data.gips || [])
+          .filter((g: any) => isSystemAuthor(g?.author))
+          .map((g: any) => sanitizeGIP(g));
+        setGips(filtered);
       }
     } catch (error) {
       console.error('Error fetching GIPs:', error);
