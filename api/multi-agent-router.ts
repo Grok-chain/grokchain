@@ -3,8 +3,40 @@ import { getAllAgentResponses, getAgentResponse, getRandomAgentResponse, agents,
 
 export const multiAgentRouter = express.Router();
 
+// Rate limiting for API efficiency
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 5; // Max 5 requests per minute per IP (more restrictive for multi-agent)
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(ip);
+  
+  if (!userLimit || now > userLimit.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+  
+  if (userLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return false;
+  }
+  
+  userLimit.count++;
+  return true;
+}
+
 // POST endpoint to send a message to all agents and get their responses
 multiAgentRouter.post('/chat', async (req, res) => {
+  // Rate limiting for API efficiency
+  const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+  if (!checkRateLimit(clientIP)) {
+    return res.status(429).json({ 
+      error: 'Rate limit exceeded', 
+      message: 'Too many requests. Please wait before trying again.',
+      retryAfter: Math.ceil(RATE_LIMIT_WINDOW / 1000)
+    });
+  }
+
   const { message } = req.body;
   
   if (!message || typeof message !== 'string') {
@@ -35,6 +67,16 @@ multiAgentRouter.post('/chat', async (req, res) => {
 
 // POST endpoint to send a message to a specific agent
 multiAgentRouter.post('/chat/:agentId', async (req, res) => {
+  // Rate limiting for API efficiency
+  const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+  if (!checkRateLimit(clientIP)) {
+    return res.status(429).json({ 
+      error: 'Rate limit exceeded', 
+      message: 'Too many requests. Please wait before trying again.',
+      retryAfter: Math.ceil(RATE_LIMIT_WINDOW / 1000)
+    });
+  }
+
   const { agentId } = req.params;
   const { message } = req.body;
   
@@ -66,6 +108,16 @@ multiAgentRouter.post('/chat/:agentId', async (req, res) => {
 
 // POST endpoint to get a response from a random agent
 multiAgentRouter.post('/chat/random', async (req, res) => {
+  // Rate limiting for API efficiency
+  const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+  if (!checkRateLimit(clientIP)) {
+    return res.status(429).json({ 
+      error: 'Rate limit exceeded', 
+      message: 'Too many requests. Please wait before trying again.',
+      retryAfter: Math.ceil(RATE_LIMIT_WINDOW / 1000)
+    });
+  }
+
   const { message } = req.body;
   
   if (!message || typeof message !== 'string') {

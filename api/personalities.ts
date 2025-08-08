@@ -4,6 +4,28 @@ import { claudeChatCompletion } from './claude';
 
 export const personalitiesRouter = express.Router();
 
+// Rate limiting for API efficiency
+const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
+const RATE_LIMIT_WINDOW = 60000; // 1 minute
+const RATE_LIMIT_MAX_REQUESTS = 10; // Max 10 requests per minute per IP
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const userLimit = rateLimitMap.get(ip);
+  
+  if (!userLimit || now > userLimit.resetTime) {
+    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return true;
+  }
+  
+  if (userLimit.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return false;
+  }
+  
+  userLimit.count++;
+  return true;
+}
+
 // Enhanced AI-focused persona prompts for AI APIs
 const validators = {
   "alice": {
@@ -105,6 +127,16 @@ Keep responses under 200 words and stay in character as the Chaotic One with reb
 };
 
 personalitiesRouter.post('/:validator', async (req, res) => {
+  // Rate limiting for API efficiency
+  const clientIP = req.ip || req.connection.remoteAddress || 'unknown';
+  if (!checkRateLimit(clientIP)) {
+    return res.status(429).json({ 
+      error: 'Rate limit exceeded', 
+      message: 'Too many requests. Please wait before trying again.',
+      retryAfter: Math.ceil(RATE_LIMIT_WINDOW / 1000)
+    });
+  }
+
   const { validator } = req.params;
   const { command } = req.body;
   const val = validators[validator.toLowerCase() as keyof typeof validators];

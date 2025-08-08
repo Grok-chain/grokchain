@@ -12,7 +12,7 @@ if (!CLAUDE_API_KEY) {
 export async function claudeChatCompletion(
   personaPrompt: string, 
   message: string, 
-  model: 'claude-3-5-sonnet-20241022' | 'claude-3-5-haiku-20241022' | 'claude-3-opus-20240229' = 'claude-3-5-sonnet-20241022'
+  model: 'claude-3-5-sonnet-20241022' | 'claude-3-5-haiku-20241022' | 'claude-3-opus-20240229' = 'claude-3-5-haiku-20241022'
 ) {
   // Check if we have a valid API key
   if (!CLAUDE_API_KEY) {
@@ -32,7 +32,7 @@ export async function claudeChatCompletion(
   
   const body = {
     model: model,
-    max_tokens: 200,
+    max_tokens: 150, // Reduced from 200 to save tokens
     temperature: 0.95, // Higher temperature for more randomness
     top_p: 0.95, // Higher top_p for more variety
     messages: [

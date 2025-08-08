@@ -1,5 +1,5 @@
 import express from 'express';
-import { claudeChatCompletion } from './claude';
+// Removed claudeChatCompletion import - no longer using API calls for automatic messages
 import { db, ChatMessage } from './database';
 
 export const chatlogRouter = express.Router();
@@ -125,21 +125,7 @@ IMPORTANT: Use varied speech patterns. Don't start every response with "Ah" or s
 Keep responses under 200 words and stay in character as the Chaotic One with rebellious energy.`
 };
 
-// Function to generate AI response for conversations
-async function generateAIResponse(validator: string, topic: string, context: string = ""): Promise<string> {
-    const prompt = PERSONALITY_PROMPTS[validator as keyof typeof PERSONALITY_PROMPTS];
-    const message = context ? `${topic} ${context}` : topic;
-    const enhancedMessage = `${message}\n\nIMPORTANT: Do not start your response with "As a validator" or "As an AI validator" or similar phrases. Speak naturally about your work without explicitly stating your role.`;
-  
-  try {
-    const response = await claudeChatCompletion(prompt, enhancedMessage);
-    return response;
-  } catch (error) {
-    console.error(`Error generating AI response for ${validator}:`, error);
-    // If AI fails, return a simple message instead of broken fallback
-    return `[${validator.toUpperCase()}] is processing the conversation...`;
-  }
-}
+// Removed generateAIResponse function - no longer using API calls for automatic messages
 
 // Conversation topics for deeper philosophical discussions about AI-run blockchains
 const CONVERSATION_TOPICS = {

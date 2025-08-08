@@ -1,5 +1,5 @@
 import express from 'express';
-import { claudeChatCompletion } from './claude';
+// Removed claudeChatCompletion import - no longer using API calls for automatic messages
 import { db } from './database';
 
 export const chatlogRouter = express.Router();
@@ -182,28 +182,7 @@ const CONVERSATION_STARTERS = [
   "What implications does this have for"
 ];
 
-async function generateAIResponse(validator: string, topic: string, context: string = ""): Promise<string> {
-  try {
-    const personality = PERSONALITY_PROMPTS[validator as keyof typeof PERSONALITY_PROMPTS];
-    if (!personality) {
-      return `[${validator}] I don't have much to say about that.`;
-    }
-
-    const prompt = `${personality}
-
-You are having a conversation about: ${topic}
-
-${context ? `Context: ${context}` : ''}
-
-Respond naturally as your character, keeping it under 200 words. Don't mention that you're an AI or that this is a simulation.`;
-
-    const response = await claudeChatCompletion(prompt, '');
-    return response || `[${validator}] I'm processing that thought...`;
-  } catch (error) {
-    console.error(`Error generating AI response for ${validator}:`, error);
-    return `[${validator}] *processing error*`;
-  }
-}
+// Removed generateAIResponse function - no longer using API calls for automatic messages
 
 // Frequency control functions
 function shouldStartNewConversation(): boolean {
