@@ -18,6 +18,42 @@ function authenticateAdmin(req: express.Request): boolean {
 
 export const gipRouter = express.Router();
 
+// Helpers for output sanitation and access control
+function authorIsSystem(author: unknown): boolean {
+  if (!author || typeof author !== 'string') return false;
+  const a = author.toLowerCase();
+  return a === 'system' || a === 'admin';
+}
+
+function sanitizeText(text: unknown): string {
+  if (typeof text !== 'string') return '';
+  let t = text;
+  // Redact contract/address patterns like CA:<base58/alnum>
+  t = t.replace(/\bCA:[A-Za-z0-9]+\b/g, '[REDACTED]');
+  // Basic profanity/NSFW redaction (expand as needed)
+  t = t.replace(/big\s*booty\s*latinas/gi, '[REDACTED]');
+  return t;
+}
+
+function sanitizeGIP(gip: any): any {
+  if (!gip || typeof gip !== 'object') return gip;
+  return {
+    ...gip,
+    title: sanitizeText(gip.title),
+    author: sanitizeText(gip.author),
+    summary: sanitizeText(gip.summary),
+    fullProposal: sanitizeText(gip.fullProposal),
+    debateThread: Array.isArray(gip.debateThread)
+      ? gip.debateThread.map((m: any) => ({
+          ...m,
+          message: sanitizeText(m?.message),
+          agentName: sanitizeText(m?.agentName),
+        }))
+      : [],
+    tags: Array.isArray(gip.tags) ? gip.tags.map((t: any) => sanitizeText(t)) : [],
+  };
+}
+
 // GET current debate status
 gipRouter.get('/debate-status', (req, res) => {
   const status = gipSystem.getCurrentDebateStatus();
@@ -50,7 +86,10 @@ gipRouter.post('/restart-debate', async (req, res) => {
 gipRouter.get('/', (req, res) => {
   const { status, category, author } = req.query;
   
-  let gips = [...gipSystem.getActiveGIPs(), ...gipSystem.getArchivedGIPs()];
+  let gips = [...gipSystem.getActiveGIPs(), ...gipSystem.getArchivedGIPs()]
+    // Only expose system/admin-created items
+    .filter(g => authorIsSystem(g?.author))
+    .map(sanitizeGIP);
   
   if (status) {
     gips = gips.filter(gip => gip.status === status);
@@ -72,18 +111,22 @@ gipRouter.get('/', (req, res) => {
 
 // GET active GIPs only
 gipRouter.get('/active', (req, res) => {
-  res.json({
-    success: true,
-    gips: gipSystem.getActiveGIPs().sort((a, b) => b.createdAt - a.createdAt)
-  });
+  const gips = gipSystem
+    .getActiveGIPs()
+    .filter(g => authorIsSystem(g?.author))
+    .map(sanitizeGIP)
+    .sort((a, b) => b.createdAt - a.createdAt);
+  res.json({ success: true, gips });
 });
 
 // GET archived GIPs only
 gipRouter.get('/archived', (req, res) => {
-  res.json({
-    success: true,
-    gips: gipSystem.getArchivedGIPs().sort((a, b) => b.createdAt - a.createdAt)
-  });
+  const gips = gipSystem
+    .getArchivedGIPs()
+    .filter(g => authorIsSystem(g?.author))
+    .map(sanitizeGIP)
+    .sort((a, b) => b.createdAt - a.createdAt);
+  res.json({ success: true, gips });
 });
 
 // GET specific GIP
@@ -94,15 +137,22 @@ gipRouter.get('/:gipId', (req, res) => {
   if (!gip) {
     return res.status(404).json({ error: `GIP ${gipId} not found` });
   }
+  if (!authorIsSystem(gip.author)) {
+    return res.status(404).json({ error: `GIP ${gipId} not found` });
+  }
   
   res.json({
     success: true,
-    gip
+    gip: sanitizeGIP(gip)
   });
 });
 
 // POST create new GIP
 gipRouter.post('/', async (req, res) => {
+  // Lock down creation to admin only
+  if (!authenticateAdmin(req)) {
+    return res.status(403).json({ error: 'GIP creation is disabled for non-admins' });
+  }
   const { 
     author, 
     title, 

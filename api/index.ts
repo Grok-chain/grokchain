@@ -93,6 +93,12 @@ gipSystem.initializeWithRealisticGIPs().then(() => {
 // Ensure Explorer API endpoints always live and seeded
 defineExplorerEndpoints(app, chain);
 
+// Version endpoint for deployment verification
+app.get('/api/version', (_req, res) => {
+  const version = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.VERCEL_GIT_COMMIT_SHA || process.env.COMMIT_SHA || 'dev-local';
+  res.json({ version });
+});
+
 
 
 
