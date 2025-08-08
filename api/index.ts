@@ -5,9 +5,9 @@ import { personalitiesRouter } from './personalities';
 import { chain } from './chain';
 import { chatlogRouter, addEventChatToLog } from './chatlog';
 import { grokChatCompletion } from './grok';
-import { multiAgentRouter } from './multi-agent-router';
 import { gipRouter } from './gip-router';
 import { gipSystem } from './gip-system';
+import { adminRouter } from './admin';
 dotenv.config();
 
 // Base58 alphabet for GrokChain addresses
@@ -80,8 +80,8 @@ app.use(cors());
 app.use(express.json());
 app.use('/api/personality', personalitiesRouter);
 app.use('/api/chatlog', chatlogRouter);
-app.use('/api/multi-agent', multiAgentRouter);
 app.use('/api/gip', gipRouter);
+app.use('/api/admin', adminRouter);
 
 // Initialize GIP system with realistic blockchain improvement proposals
 gipSystem.initializeWithRealisticGIPs().then(() => {

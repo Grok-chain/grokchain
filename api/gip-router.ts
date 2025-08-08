@@ -2,6 +2,20 @@ import express from 'express';
 import { gipSystem } from './gip-system';
 import { GIPCategory, GIPPriority, GIPStatus } from './gip-types';
 
+// Admin authentication
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'grokchain-admin-2024';
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
+
+function authenticateAdmin(req: express.Request): boolean {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return false;
+  
+  const credentials = Buffer.from(authHeader.replace('Basic ', ''), 'base64').toString();
+  const [username, password] = credentials.split(':');
+  
+  return username === ADMIN_USERNAME && password === ADMIN_PASSWORD;
+}
+
 export const gipRouter = express.Router();
 
 // GET current debate status
@@ -196,6 +210,146 @@ gipRouter.get('/stats/system', (req, res) => {
     success: true,
     stats
   });
+});
+
+// ADMIN ENDPOINTS - Require authentication
+
+// DELETE GIP (Admin only)
+gipRouter.delete('/:gipId', (req, res) => {
+  if (!authenticateAdmin(req)) {
+    return res.status(401).json({ error: 'Admin authentication required' });
+  }
+  
+  const { gipId } = req.params;
+  
+  try {
+    const deleted = gipSystem.deleteGIP(gipId);
+    
+    if (!deleted) {
+      return res.status(404).json({ error: `GIP ${gipId} not found` });
+    }
+    
+    res.json({
+      success: true,
+      message: `GIP ${gipId} deleted successfully`
+    });
+  } catch (error) {
+    console.error('Error deleting GIP:', error);
+    res.status(500).json({ 
+      error: 'Failed to delete GIP',
+      details: String(error)
+    });
+  }
+});
+
+// ADMIN ENDPOINTS - Require authentication
+
+// DELETE GIP (Admin only)
+gipRouter.delete('/:gipId', (req, res) => {
+  if (!authenticateAdmin(req)) {
+    return res.status(401).json({ error: 'Admin authentication required' });
+  }
+  
+  const { gipId } = req.params;
+  
+  try {
+    const deleted = gipSystem.deleteGIP(gipId);
+    
+    if (!deleted) {
+      return res.status(404).json({ error: `GIP ${gipId} not found` });
+    }
+    
+    res.json({
+      success: true,
+      message: `GIP ${gipId} deleted successfully`
+    });
+  } catch (error) {
+    console.error('Error deleting GIP:', error);
+    res.status(500).json({ 
+      error: 'Failed to delete GIP',
+      details: String(error)
+    });
+  }
+});
+
+// DELETE specific message from GIP debate (Admin only)
+gipRouter.delete('/:gipId/messages/:messageId', (req, res) => {
+  if (!authenticateAdmin(req)) {
+    return res.status(401).json({ error: 'Admin authentication required' });
+  }
+  
+  const { gipId, messageId } = req.params;
+  
+  try {
+    const deleted = gipSystem.deleteMessage(gipId, messageId);
+    
+    if (!deleted) {
+      return res.status(404).json({ error: `Message ${messageId} not found in GIP ${gipId}` });
+    }
+    
+    res.json({
+      success: true,
+      message: `Message ${messageId} deleted from GIP ${gipId}`
+    });
+  } catch (error) {
+    console.error('Error deleting message:', error);
+    res.status(500).json({ 
+      error: 'Failed to delete message',
+      details: String(error)
+    });
+  }
+});
+
+// DELETE all user-generated content (Admin only)
+gipRouter.delete('/admin/clear-user-content', (req, res) => {
+  if (!authenticateAdmin(req)) {
+    return res.status(401).json({ error: 'Admin authentication required' });
+  }
+  
+  try {
+    const deletedCount = gipSystem.clearAllUserGeneratedContent();
+    
+    res.json({
+      success: true,
+      message: `Cleared ${deletedCount} user-generated GIPs`,
+      deletedCount
+    });
+  } catch (error) {
+    console.error('Error clearing user content:', error);
+    res.status(500).json({ 
+      error: 'Failed to clear user content',
+      details: String(error)
+    });
+  }
+});
+
+// GET admin dashboard data (Admin only)
+gipRouter.get('/admin/dashboard', (req, res) => {
+  if (!authenticateAdmin(req)) {
+    return res.status(401).json({ error: 'Admin authentication required' });
+  }
+  
+  try {
+    const allGIPs = [...gipSystem.getActiveGIPs(), ...gipSystem.getArchivedGIPs()];
+    const userGeneratedGIPs = allGIPs.filter(gip => gip.author !== 'system' && gip.author !== 'admin');
+    
+    res.json({
+      success: true,
+      dashboard: {
+        totalGIPs: allGIPs.length,
+        activeGIPs: gipSystem.getActiveGIPs().length,
+        archivedGIPs: gipSystem.getArchivedGIPs().length,
+        userGeneratedGIPs: userGeneratedGIPs.length,
+        systemGIPs: allGIPs.filter(gip => gip.author === 'system' || gip.author === 'admin').length
+      }
+    });
+  } catch (error) {
+    console.error('Error getting admin dashboard:', error);
+    res.status(500).json({ 
+      error: 'Failed to get admin dashboard',
+      details: String(error)
+    });
+  }
 });
 
 // POST trigger auto-GIP generation

@@ -1449,6 +1449,65 @@ BENEFITS:
       debateRules: this.state.debateRules
     };
   }
+
+  // ADMIN FUNCTIONS
+
+  // Delete a GIP completely
+  deleteGIP(gipId: string): boolean {
+    const activeIndex = this.state.activeGIPs.findIndex(gip => gip.id === gipId);
+    const archivedIndex = this.state.archivedGIPs.findIndex(gip => gip.id === gipId);
+    
+    if (activeIndex !== -1) {
+      this.state.activeGIPs.splice(activeIndex, 1);
+      return true;
+    }
+    
+    if (archivedIndex !== -1) {
+      this.state.archivedGIPs.splice(archivedIndex, 1);
+      return true;
+    }
+    
+    return false;
+  }
+
+  // Delete a specific message from a GIP debate
+  deleteMessage(gipId: string, messageId: string): boolean {
+    const gip = this.getGIP(gipId);
+    if (!gip) return false;
+    
+    const messageIndex = gip.debateThread.findIndex(msg => msg.id === messageId);
+    if (messageIndex !== -1) {
+      gip.debateThread.splice(messageIndex, 1);
+      return true;
+    }
+    
+    return false;
+  }
+
+  // Clear all user-generated content (non-system GIPs)
+  clearAllUserGeneratedContent(): number {
+    const userGIPs = this.state.activeGIPs.filter(gip => 
+      gip.author !== 'system' && gip.author !== 'admin'
+    );
+    
+    const userArchivedGIPs = this.state.archivedGIPs.filter(gip => 
+      gip.author !== 'system' && gip.author !== 'admin'
+    );
+    
+    const totalDeleted = userGIPs.length + userArchivedGIPs.length;
+    
+    // Remove user GIPs from active list
+    this.state.activeGIPs = this.state.activeGIPs.filter(gip => 
+      gip.author === 'system' || gip.author === 'admin'
+    );
+    
+    // Remove user GIPs from archived list
+    this.state.archivedGIPs = this.state.archivedGIPs.filter(gip => 
+      gip.author === 'system' || gip.author === 'admin'
+    );
+    
+    return totalDeleted;
+  }
 }
 
 // Export singleton instance

@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import MultiAgentChat from './MultiAgentChat';
 import GIPSystem from './GIPSystem';
+import AdminPanel from './AdminPanel';
 import LiveDebate from './LiveDebate';
 import WalletConnect from './WalletConnect';
 
