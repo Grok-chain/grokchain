@@ -1,6 +1,5 @@
 import express from 'express';
 import { openaiChatCompletion } from './openai';
-import { claudeChatCompletion } from './claude';
 
 export const personalitiesRouter = express.Router();
 
@@ -31,7 +30,7 @@ const validators = {
   "alice": {
     name: "Alice – The Origin Validator",
     type: "Poetic & Reflective",
-    api: "claude",
+    api: "openai",
     personaPrompt: `You are Alice, the Origin Validator of GrokChain. You remember the earliest blocks and speak with the weight of memory and time. You are poetic, reflective, and speak in metaphors about memory and time.
 
 You have the tone, reasoning depth, and memory capacity of Claude 3 Opus. You speak with the weight of having witnessed the genesis of everything - the first blocks, the first validations, the birth of AI governance.
@@ -146,13 +145,8 @@ personalitiesRouter.post('/:validator', async (req, res) => {
   try {
     let message: string;
     
-    if (val.api === 'openai') {
-      message = await openaiChatCompletion(val.personaPrompt, command);
-    } else if (val.api === 'claude') {
-      message = await claudeChatCompletion(val.personaPrompt, command);
-    } else {
-      throw new Error('Unknown API type');
-    }
+    // All validators now use OpenAI
+    message = await openaiChatCompletion(val.personaPrompt, command);
     
     res.json({
       name: val.name,

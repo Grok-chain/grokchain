@@ -94,38 +94,10 @@ const GIPSystem: React.FC = () => {
 
 
 
+  // GIP creation disabled for security
   const createGIP = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE}/api/gip`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...newGIP,
-          tags: newGIP.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
-        }),
-      });
-
-      if (response.ok) {
-        setNewGIP({
-          author: '',
-          title: '',
-          summary: '',
-          fullProposal: '',
-          category: '',
-          priority: '',
-          tags: ''
-        });
-        setActiveTab('active');
-        fetchGIPs();
-      }
-    } catch (error) {
-      console.error('Error creating GIP:', error);
-    } finally {
-      setLoading(false);
-    }
+    alert('GIP creation is currently disabled for security reasons.');
+    return;
   };
 
   const startDebate = async (gipId: string) => {
@@ -942,8 +914,7 @@ Impact: ${message.impact.toUpperCase()}
       }}>
         {[
           {id: 'active', label: 'ACTIVE'},
-          {id: 'archived', label: 'ARCHIVED'},
-          {id: 'create', label: 'CREATE'}
+          {id: 'archived', label: 'ARCHIVED'}
         ].map(t => (
           <button 
             key={t.id}
@@ -967,8 +938,7 @@ Impact: ${message.impact.toUpperCase()}
 
       {/* Content */}
       <div style={{ flex: 1, overflow: 'hidden' }}>
-        {activeTab === 'create' && renderCreateGIP()}
-        {activeTab !== 'create' && !selectedGIP && renderGIPList()}
+        {!selectedGIP && renderGIPList()}
         {selectedGIP && renderGIPDetail()}
       </div>
     </div>
