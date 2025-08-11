@@ -114,7 +114,7 @@ class DatabaseManager {
       )
     `);
 
-    // Create GIPs table for persistent GIP storage
+    // Create GIPs table
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS gips (
         id TEXT PRIMARY KEY,
@@ -128,10 +128,31 @@ class DatabaseManager {
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL,
         debate_start_time INTEGER,
-        tags TEXT,
-        votes TEXT
+        tags TEXT NOT NULL,
+        votes TEXT NOT NULL,
+        created_at_db DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Create slot data table for persistent slot timer
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS slot_data (
+        id INTEGER PRIMARY KEY CHECK (id = 1),
+        current_slot INTEGER NOT NULL,
+        epoch INTEGER NOT NULL,
+        last_updated INTEGER NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Insert initial slot data if table is empty
+    const slotCount = this.db.prepare('SELECT COUNT(*) as count FROM slot_data').get() as any;
+    if (slotCount.count === 0) {
+      this.db.exec(`
+        INSERT INTO slot_data (id, current_slot, epoch, last_updated) 
+        VALUES (1, 265000, 1, ${Date.now()})
+      `);
+    }
 
     // Create indexes for better performance
     this.db.exec(`
@@ -225,6 +246,29 @@ class DatabaseManager {
       gip.updatedAt, gip.debateStartTime || null,
       JSON.stringify(gip.tags || []), JSON.stringify(gip.votes || {})
     );
+  }
+
+  // Slot persistence methods for Railway builds
+  saveSlotData(slotData: { currentSlot: number; epoch: number; lastUpdated: number }): void {
+    const stmt = this.db.prepare(`
+      INSERT OR REPLACE INTO slot_data (id, current_slot, epoch, last_updated) 
+      VALUES (1, ?, ?, ?)
+    `);
+    stmt.run(slotData.currentSlot, slotData.epoch, slotData.lastUpdated);
+  }
+
+  getSlotData(): { currentSlot: number; epoch: number; lastUpdated: number } | null {
+    const stmt = this.db.prepare('SELECT current_slot, epoch, last_updated FROM slot_data WHERE id = 1');
+    const result = stmt.get() as any;
+    
+    if (result) {
+      return {
+        currentSlot: result.current_slot,
+        epoch: result.epoch,
+        lastUpdated: result.last_updated
+      };
+    }
+    return null;
   }
 
   getGIP(gipId: string): any {

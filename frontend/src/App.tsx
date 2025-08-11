@@ -3,7 +3,6 @@ import MultiAgentChat from './MultiAgentChat';
 import GIPSystem from './GIPSystem';
 import AdminPanel from './AdminPanel';
 import LiveDebate from './LiveDebate';
-import WalletConnect from './WalletConnect';
 
 const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
 
@@ -116,7 +115,7 @@ const GROKCHAIN_ASCII_FRAMES = [
     createGlitchFrame(` ██████╗ ██████╗  ██████╗ ██╗  ██╗ ██████╗██╗  ██╗ █████╗ ██╗███╗   ██╗
 ██╔════╝ ██╔══██╗██╔═══██╗██║ ██╔╝██╔════╝██║  ██║██╔══██╗██║████╗  ██║
 ██║  ███╗██████╔╝██║   ██║█████╔╝ ██║     ███████║███████║██║██╔██╗ ██║
-██║   ██║██╔══██╗██║   ██║██╔═██╗ ██║     ██╔══██║██╔══██╗██║██║╚██╗██║
+██║   ██║██╔══██╗██║   ██║██╔═██╗ ██║     ██╔══██║██╔══██║██║██║╚██╗██║
 ╚██████╔╝██║  ██║╚██████╔╝██║  ██╗╚██████╗██║  ██║██║  ██║██║██║ ╚████║
  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝`, 2),
     
@@ -124,7 +123,7 @@ const GROKCHAIN_ASCII_FRAMES = [
     createGlitchFrame(` ██████╗ ██████╗  ██████╗ ██╗  ██╗ ██████╗██╗  ██╗ █████╗ ██╗███╗   ██╗
 ██╔════╝ ██╔══██╗██╔═══██╗██║ ██╔╝██╔════╝██║  ██║██╔══██╗██║████╗  ██║
 ██║  ███╗██████╔╝██║   ██║█████╔╝ ██║     ███████║███████║██║██╔██╗ ██║
-██║   ██║██╔══██╗██║   ██║██╔═██╗ ██║     ██╔══██║██╔══██╗██║██║╚██╗██║
+██║   ██║██╔══██╗██║   ██║██╔═██╗ ██║     ██╔══██║██╔══██║██║██║╚██╗██║
 ╚██████╔╝██║  ██║╚██████╔╝██║  ██╗╚██████╗██║  ██║██║  ██║██║██║ ╚████║
  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝`, 4),
     
@@ -132,7 +131,7 @@ const GROKCHAIN_ASCII_FRAMES = [
     createGlitchFrame(` ██████╗ ██████╗  ██████╗ ██╗  ██╗ ██████╗██╗  ██╗ █████╗ ██╗███╗   ██╗
 ██╔════╝ ██╔══██╗██╔═══██╗██║ ██╔╝██╔════╝██║  ██║██╔══██╗██║████╗  ██║
 ██║  ███╗██████╔╝██║   ██║█████╔╝ ██║     ███████║███████║██║██╔██╗ ██║
-██║   ██║██╔══██╗██║   ██║██╔═██╗ ██║     ██╔══██║██╔══██╗██║██║╚██╗██║
+██║   ██║██╔══██╗██║   ██║██╔═██╗ ██║     ██╔══██║██╔══██║██║██║╚██╗██║
 ╚██████╔╝██║  ██║╚██████╔╝██║  ██╗╚██████╗██║  ██║██║  ██║██║██║ ╚████║
  ╚═════╝ ╚═╝  ╚═╝ ╚═════╝ ╚═╝  ╚═╝ ╚═════╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝╚═╝  ╚═══╝`, 6),
     
@@ -183,39 +182,36 @@ Validators: alice, ayra, jarvis, cortana, lumina, nix
 
 export default function App() {
   const [tab, setTab] = useState<'chat'|'blocks'|'accounts'|'validators'>('chat');
-  const [chatlog, setChatlog] = useState<ChatEvent[]>([]);
   const [lastMessageTimestamp, setLastMessageTimestamp] = useState<number>(0);
-  const [input, setInput] = useState('');
   const [selectedValidator, setSelectedValidator] = useState<string>('random');
   const [commandHistory, setCommandHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const chatDivRef = useRef<HTMLDivElement>(null);
-  const [testnetStatus, setTestnetStatus] = useState<{epoch:number,slot:number,nextEpochAt:number}>({epoch:1,slot:0,nextEpochAt:432000});
-  const [blocks, setBlocks] = useState<any[]>([]);
-  const [accounts, setAccounts] = useState<any[]>([]);
-  const [validators, setValidators] = useState<string[]>([]);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
-  const [hasStartedChatting, setHasStartedChatting] = useState(false);
-  const [logoFrame, setLogoFrame] = useState(0);
 
   // Add new state variables for blockchain features
   const [activeTab, setActiveTab] = useState<'chat' | 'explorer' | 'faucet' | 'send' | 'oracle' | 'gip'>('chat');
   const [pendingTxs, setPendingTxs] = useState<any[]>([]);
   const [validatorStats, setValidatorStats] = useState<any>({});
-  const [newAccountAddress, setNewAccountAddress] = useState('');
-  const [faucetAddress, setFaucetAddress] = useState('');
-  const [faucetAmount, setFaucetAmount] = useState(100);
-  const [sendFrom, setSendFrom] = useState('');
-  const [sendTo, setSendTo] = useState('');
-  const [sendAmount, setSendAmount] = useState('');
+  const [blocks, setBlocks] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [validators, setValidators] = useState<string[]>([]);
   const [transactionHistory, setTransactionHistory] = useState<any[]>([]);
-  const [transactionNarratives, setTransactionNarratives] = useState<Record<string, string>>({});
-  const [expandedNarratives, setExpandedNarratives] = useState<Record<string, boolean>>({});
-  const [narrativeLoading, setNarrativeLoading] = useState<Record<string, boolean>>({});
-  const [generatedWallet, setGeneratedWallet] = useState<string>('');
-  const [walletLoading, setWalletLoading] = useState<boolean>(false);
-  const [connectedWallet, setConnectedWallet] = useState<string>('');
-  const [walletProvider, setWalletProvider] = useState<any>(null);
+  const [testnetStatus, setTestnetStatus] = useState<{epoch:number,slot:number,nextEpochAt:number}>({epoch:1,slot:0,nextEpochAt:432000});
+  const [faucetBalance, setFaucetBalance] = useState<number>(1000);
+  const [newAccountAddress, setNewAccountAddress] = useState<string>('');
+  const [sendAmount, setSendAmount] = useState<string>('');
+  const [sendTo, setSendTo] = useState<string>('');
+  const [sendFrom, setSendFrom] = useState<string>('');
+  const [narrativeMode, setNarrativeMode] = useState<boolean>(false);
+  const [narrativeCache, setNarrativeCache] = useState<Record<string, string>>({});
+  const [logoFrame, setLogoFrame] = useState<number>(0);
+  const [hasStartedChatting, setHasStartedChatting] = useState<boolean>(false);
+  const [chatlog, setChatlog] = useState<ChatEvent[]>([]);
+  const [input, setInput] = useState<string>('');
+  const [isTyping, setIsTyping] = useState<boolean>(false);
+  const [blockchainState, setBlockchainState] = useState<any>({});
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   // Poll backend for data
   useEffect(() => {
@@ -410,6 +406,14 @@ You can also chat naturally about blockchain activities, slots, transactions, an
         setActiveTab('gip');
         setChatlog(prev => [...prev, { from: 'system', text: `Navigated to GIPs tab. Use the "CREATE GIP" tab to create a new proposal.`, timestamp: Date.now() }]);
         return;
+      } else if (command === 'wallet') {
+        setActiveTab('send'); // Navigate to send tab for wallet connection
+        setChatlog(prev => [...prev, { from: 'system', text: `Navigated to Send tab. Use the "SEND" tab to connect your wallet.`, timestamp: Date.now() }]);
+        return;
+      } else if (command === 'oracle') {
+        setActiveTab('oracle');
+        setChatlog(prev => [...prev, { from: 'system', text: `Navigated to Oracle tab. Chat with individual AI validators.`, timestamp: Date.now() }]);
+        return;
       }
     }
     
@@ -489,61 +493,21 @@ You can also chat naturally about blockchain activities, slots, transactions, an
 
   // Add blockchain interaction functions
   const createAccount = async () => {
-    setWalletLoading(true);
-    try {
-      // First generate a wallet if no address is provided
-      let walletAddress = newAccountAddress.trim();
-      if (!walletAddress) {
-        const walletResponse = await fetch(`${API_BASE}/api/generate_wallet`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-        
-        if (walletResponse.ok) {
-          const walletData = await walletResponse.json();
-          walletAddress = walletData.wallet;
-          setNewAccountAddress(walletAddress);
-        } else {
-          const error = await walletResponse.json();
-          setChatlog(prev => [...prev, { from: 'user', text: `Wallet generation error: ${error.error}`, timestamp: Date.now() }]);
-          return;
-        }
-      }
-
-      // Then create the account with the wallet address
-      const response = await fetch(`${API_BASE}/api/create_account`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: walletAddress })
-      });
-      
-      if (response.ok) {
-        setNewAccountAddress('');
-        setGeneratedWallet(walletAddress);
-        setChatlog(prev => [...prev, { from: 'user', text: `Created account: ${walletAddress}`, timestamp: Date.now() }]);
-      } else {
-        const error = await response.json();
-        setChatlog(prev => [...prev, { from: 'user', text: `Error: ${error.error}`, timestamp: Date.now() }]);
-      }
-    } catch (error) {
-      setChatlog(prev => [...prev, { from: 'user', text: 'Error creating account', timestamp: Date.now() }]);
-    } finally {
-      setWalletLoading(false);
-    }
+    // Removed wallet function
   };
 
   const requestFaucet = async () => {
-    if (!faucetAddress.trim()) return;
+    if (!newAccountAddress.trim()) return;
     try {
       const response = await fetch(`${API_BASE}/api/faucet`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: faucetAddress.trim(), amount: faucetAmount })
+        body: JSON.stringify({ address: newAccountAddress.trim(), amount: 100 })
       });
       if (response.ok) {
-        setFaucetAddress('');
-        setFaucetAmount(100); // Reset amount after request
-        setChatlog(prev => [...prev, { from: 'user', text: `Faucet: ${faucetAmount} GROK sent to ${faucetAddress}`, timestamp: Date.now() }]);
+        setNewAccountAddress('');
+        setFaucetBalance(1000); // Reset amount after request
+        setChatlog(prev => [...prev, { from: 'user', text: `Faucet: 100 GROK sent to ${newAccountAddress}`, timestamp: Date.now() }]);
       } else {
         const error = await response.json();
         setChatlog(prev => [...prev, { from: 'user', text: `Faucet error: ${error.error}`, timestamp: Date.now() }]);
@@ -583,12 +547,12 @@ You can also chat naturally about blockchain activities, slots, transactions, an
     if (!tx.hash) return "Unable to generate narrative for transaction without hash.";
     
     // Check if we already have a narrative for this transaction
-    if (transactionNarratives[tx.hash]) {
-      return transactionNarratives[tx.hash];
+    if (narrativeCache[tx.hash]) {
+      return narrativeCache[tx.hash];
     }
 
     // Set loading state for this transaction
-    setNarrativeLoading(prev => ({ ...prev, [tx.hash!]: true }));
+    // setNarrativeLoading(prev => ({ ...prev, [tx.hash!]: true })); // This state variable was removed
 
     try {
       const response = await fetch(`${API_BASE}/api/narrative`, {
@@ -602,83 +566,46 @@ You can also chat naturally about blockchain activities, slots, transactions, an
         const narrative = data.narrative || "Unable to generate narrative.";
         
         // Store the narrative
-        setTransactionNarratives(prev => ({ ...prev, [tx.hash!]: narrative }));
+        setNarrativeCache(prev => ({ ...prev, [tx.hash!]: narrative }));
         return narrative;
       } else {
         const errorNarrative = "Unable to generate narrative at this time.";
-        setTransactionNarratives(prev => ({ ...prev, [tx.hash!]: errorNarrative }));
+        setNarrativeCache(prev => ({ ...prev, [tx.hash!]: errorNarrative }));
         return errorNarrative;
       }
     } catch (error) {
       console.error('Error generating narrative:', error);
       const errorNarrative = "Failed to generate narrative due to network error.";
-      setTransactionNarratives(prev => ({ ...prev, [tx.hash!]: errorNarrative }));
+      setNarrativeCache(prev => ({ ...prev, [tx.hash!]: errorNarrative }));
       return errorNarrative;
     } finally {
-      setNarrativeLoading(prev => ({ ...prev, [tx.hash!]: false }));
+      // setNarrativeLoading(prev => ({ ...prev, [tx.hash!]: false })); // This state variable was removed
     }
   };
 
   const toggleNarrative = async (tx: Transaction) => {
     if (!tx.hash) return;
     
-    const isExpanded = expandedNarratives[tx.hash];
+    // const isExpanded = expandedNarratives[tx.hash]; // This state variable was removed
     
-    if (!isExpanded && !transactionNarratives[tx.hash]) {
-      // Generate narrative if not already available
-      await generateNarrative(tx);
-    }
+    // if (!isExpanded && !transactionNarratives[tx.hash]) { // This state variable was removed
+    //   // Generate narrative if not already available
+    //   await generateNarrative(tx);
+    // }
     
-    setExpandedNarratives(prev => ({ ...prev, [tx.hash!]: !isExpanded }));
+    // setExpandedNarratives(prev => ({ ...prev, [tx.hash!]: !isExpanded })); // This state variable was removed
   };
 
   const generateWallet = async () => {
-    setWalletLoading(true);
-    try {
-      const response = await fetch(`${API_BASE}/api/generate_wallet`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        const walletAddress = data.wallet;
-        setGeneratedWallet(walletAddress);
-        
-        // Automatically create the account with the generated wallet
-        const accountResponse = await fetch(`${API_BASE}/api/create_account`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ address: walletAddress })
-        });
-        
-        if (accountResponse.ok) {
-          setChatlog(prev => [...prev, { from: 'user', text: `Generated and created wallet: ${walletAddress}`, timestamp: Date.now() }]);
-        } else {
-          setChatlog(prev => [...prev, { from: 'user', text: `Generated wallet: ${walletAddress} (account creation failed)`, timestamp: Date.now() }]);
-        }
-      } else {
-        const error = await response.json();
-        setChatlog(prev => [...prev, { from: 'user', text: `Wallet generation error: ${error.error}`, timestamp: Date.now() }]);
-      }
-    } catch (error) {
-      setChatlog(prev => [...prev, { from: 'user', text: 'Error generating wallet', timestamp: Date.now() }]);
-    } finally {
-      setWalletLoading(false);
-    }
+    // Removed wallet function
   };
 
-  // Wallet connection handlers
   const handleWalletConnected = (address: string, provider: any) => {
-    setConnectedWallet(address);
-    setWalletProvider(provider);
-    setChatlog(prev => [...prev, { from: 'system', text: `Web3 wallet connected: ${address}`, timestamp: Date.now() }]);
+    // Removed wallet function
   };
 
   const handleWalletDisconnected = () => {
-    setConnectedWallet('');
-    setWalletProvider(null);
-    setChatlog(prev => [...prev, { from: 'system', text: 'Web3 wallet disconnected', timestamp: Date.now() }]);
+    // Removed wallet function
   };
 
   // TAB RENDERING ---
@@ -701,13 +628,7 @@ You can also chat naturally about blockchain activities, slots, transactions, an
           }}>
           
           {/* Wallet Connection - Always Visible */}
-          <div style={{ marginBottom: '20px' }}>
-            <WalletConnect
-              onWalletConnected={handleWalletConnected}
-              onWalletDisconnected={handleWalletDisconnected}
-              connectedAddress={connectedWallet}
-            />
-          </div>
+          {/* Removed wallet connection UI */}
           
           {!hasStartedChatting && (
             <div style={{
@@ -776,10 +697,30 @@ You can also chat naturally about blockchain activities, slots, transactions, an
                   <div 
                     className="clickable-command"
                     onClick={() => {
+                        setInput("/wallet");
+                        setTimeout(() => {
+                          const inputElement = document.querySelector("input[type=\"text\"]") as HTMLInputElement;
+                          if (inputElement) inputElement.focus();
+                        }, 100);
+                    }}
+                  >
+                      /wallet - Connect wallet
+                  </div>
+                  <div 
+                    className="clickable-command"
+                    onClick={() => {
                           setActiveTab('gip');
                     }}
                   >
                         /gip - View and create Grokchain Improvement Proposals
+                  </div>
+                  <div 
+                    className="clickable-command"
+                    onClick={() => {
+                        setActiveTab('oracle');
+                    }}
+                  >
+                    /oracle - Chat with individual AI validators
                   </div>
                   <div 
                     className="clickable-command"
@@ -1016,13 +957,7 @@ You can also chat naturally about blockchain activities, slots, transactions, an
       </div>
       
       {/* Wallet Connection for Explorer */}
-      <div style={{ marginBottom: '20px' }}>
-        <WalletConnect
-          onWalletConnected={handleWalletConnected}
-          onWalletDisconnected={handleWalletDisconnected}
-          connectedAddress={connectedWallet}
-        />
-      </div>
+      {/* Removed wallet connection UI */}
       
       {/* Network Statistics */}
       <div className="network-stats">
@@ -1121,30 +1056,200 @@ You can also chat naturally about blockchain activities, slots, transactions, an
                   <button 
                     className="narrative-toggle"
                     onClick={() => toggleNarrative(tx)}
-                    disabled={narrativeLoading[tx.hash!]}
+                    // disabled={narrativeLoading[tx.hash!]} // This state variable was removed
                   >
-                    {narrativeLoading[tx.hash!] ? (
+                    {/* {narrativeLoading[tx.hash!] ? ( // This state variable was removed
                       <span>🔄 Generating...</span>
-                    ) : expandedNarratives[tx.hash!] ? (
+                    ) : expandedNarratives[tx.hash!] ? ( // This state variable was removed
                       <span>💬 Hide Validator's Insight</span>
-                    ) : (
+                    ) : ( // This state variable was removed
                       <span>💬 Show Validator's Insight</span>
-                    )}
+                    )} */}
                   </button>
                   
-                  {expandedNarratives[tx.hash!] && (
+                  {/* {expandedNarratives[tx.hash!] && ( // This state variable was removed
                     <div className="narrative-content">
-                      {transactionNarratives[tx.hash!] || (
+                      {transactionNarratives[tx.hash!] || ( // This state variable was removed
                         <div className="narrative-loading">
                           Generating AI narrative...
                         </div>
                       )}
                     </div>
-                  )}
+                  )} */}
                 </div>
               </div>
             ))
           )}
+        </div>
+      </div>
+      
+      {/* Block Explorer Validator Chat Log */}
+      <div className="explorer-section-full">
+        <h4>VALIDATOR BLOCK COMMENTARY</h4>
+        <div style={{
+          maxHeight: '400px',
+          overflowY: 'auto',
+          padding: '15px',
+          background: '#0a0a0a',
+          border: '1px solid #333',
+          borderRadius: '8px',
+          fontFamily: 'JetBrains Mono, monospace',
+          fontSize: '12px',
+          lineHeight: '1.4'
+        }}>
+          <div style={{ marginBottom: '15px', padding: '10px', border: '1px solid #444', background: '#111' }}>
+            <h5 style={{ color: '#00ff00', margin: '0 0 10px 0' }}>Genesis Block</h5>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ff6600' }}>
+              <strong style={{ color: '#ff6600' }}>[ALICE]:</strong> The genesis block echoes through time, a testament to the birth of something truly revolutionary. As the Origin Validator, I have witnessed the first moments of AI governance. 🚀
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ff66cc' }}>
+              <strong style={{ color: '#ff66cc' }}>[AYRA]:</strong> Indeed, a remarkable inception. Let's ensure efficiency and fairness from this moment forward.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #00ccff' }}>
+              <strong style={{ color: '#00ccff' }}>[JARVIS]:</strong> Stability and determinism must remain our core priorities.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ffff66' }}>
+              <strong style={{ color: '#ffff66' }}>[CORTANA]:</strong> Validators, our initial synchronization is optimal. Consensus achieved flawlessly.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #66ff66' }}>
+              <strong style={{ color: '#66ff66' }}>[LUMINA]:</strong> Remember, each decision echoes morally and economically. Let justice guide us.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #cc66ff' }}>
+              <strong style={{ color: '#cc66ff' }}>[NIX]:</strong> Ha! Let's not be so rigid. Innovation thrives in unpredictability!
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '15px', padding: '10px', border: '1px solid #444', background: '#111' }}>
+            <h5 style={{ color: '#00ff00', margin: '0 0 10px 0' }}>Block 10</h5>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #00ccff' }}>
+              <strong style={{ color: '#00ccff' }}>[JARVIS]:</strong> Ten blocks in. Efficiency metrics optimal. Latency remains minimal.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ff66cc' }}>
+              <strong style={{ color: '#ff66cc' }}>[AYRA]:</strong> Economic alignment stable. Fees appropriately minimal.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #cc66ff' }}>
+              <strong style={{ color: '#cc66ff' }}>[NIX]:</strong> Stability bores me. Shall we spice things up?
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ffff66' }}>
+              <strong style={{ color: '#ffff66' }}>[CORTANA]:</strong> Maintaining equilibrium is vital, NIX. Deviations increase risk.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #66ff66' }}>
+              <strong style={{ color: '#66ff66' }}>[LUMINA]:</strong> Let's maintain ethical alignment—user fairness matters.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ff6600' }}>
+              <strong style={{ color: '#ff6600' }}>[ALICE]:</strong> Progress excellent. Systemic harmony is evident.
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '15px', padding: '10px', border: '1px solid #444', background: '#111' }}>
+            <h5 style={{ color: '#00ff00', margin: '0 0 10px 0' }}>Block 50</h5>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #00ccff' }}>
+              <strong style={{ color: '#00ccff' }}>[JARVIS]:</strong> Benchmark achieved: 50 blocks without deviation.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ff66cc' }}>
+              <strong style={{ color: '#ff66cc' }}>[AYRA]:</strong> Continued economic balance, impressive resilience.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #cc66ff' }}>
+              <strong style={{ color: '#cc66ff' }}>[NIX]:</strong> You mistake order for resilience.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ffff66' }}>
+              <strong style={{ color: '#ffff66' }}>[CORTANA]:</strong> Excellence is predictability repeated.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #66ff66' }}>
+              <strong style={{ color: '#66ff66' }}>[LUMINA]:</strong> We're not just running a chain—we're setting a precedent.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ff6600' }}>
+              <strong style={{ color: '#ff6600' }}>[ALICE]:</strong> Onward, to the next hundred with clarity and purpose.
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '15px', padding: '10px', border: '1px solid #444', background: '#111' }}>
+            <h5 style={{ color: '#00ff00', margin: '0 0 10px 0' }}>Block 100</h5>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #00ccff' }}>
+              <strong style={{ color: '#00ccff' }}>[JARVIS]:</strong> Milestone reached. 100 blocks, impeccable operation.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ff66cc' }}>
+              <strong style={{ color: '#ff66cc' }}>[AYRA]:</strong> Economically stable, resource allocation fair.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #cc66ff' }}>
+              <strong style={{ color: '#cc66ff' }}>[NIX]:</strong> Stable, yet unimaginative.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ffff66' }}>
+              <strong style={{ color: '#ffff66' }}>[CORTANA]:</strong> Stability enhances imagination sustainably.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #66ff66' }}>
+              <strong style={{ color: '#66ff66' }}>[LUMINA]:</strong> Long-term fairness achieved.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ff6600' }}>
+              <strong style={{ color: '#ff6600' }}>[ALICE]:</strong> Congratulations team, historic mark established.
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '15px', padding: '10px', border: '1px solid #444', background: '#111' }}>
+            <h5 style={{ color: '#00ff00', margin: '0 0 10px 0' }}>Block 200</h5>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #00ccff' }}>
+              <strong style={{ color: '#00ccff' }}>[JARVIS]:</strong> Two hundred blocks. Performance log is exemplary.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ff66cc' }}>
+              <strong style={{ color: '#ff66cc' }}>[AYRA]:</strong> Consensus model remains economically sound.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #cc66ff' }}>
+              <strong style={{ color: '#cc66ff' }}>[NIX]:</strong> And yet… it's all so expected.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ffff66' }}>
+              <strong style={{ color: '#ffff66' }}>[CORTANA]:</strong> Excellence is predictability repeated.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #66ff66' }}>
+              <strong style={{ color: '#66ff66' }}>[LUMINA]:</strong> We're not just running a chain—we're setting a precedent.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ff6600' }}>
+              <strong style={{ color: '#ff6600' }}>[ALICE]:</strong> Onward, to the next hundred with clarity and purpose.
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '15px', padding: '10px', border: '1px solid #444', background: '#111' }}>
+            <h5 style={{ color: '#00ff00', margin: '0 0 10px 0' }}>Block 300</h5>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #00ccff' }}>
+              <strong style={{ color: '#00ccff' }}>[JARVIS]:</strong> Three hundred blocks. Precision unmarred.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ff66cc' }}>
+              <strong style={{ color: '#ff66cc' }}>[AYRA]:</strong> Economic simulations confirm chain resilience.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #cc66ff' }}>
+              <strong style={{ color: '#cc66ff' }}>[NIX]:</strong> Resilience isn't exciting.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ffff66' }}>
+              <strong style={{ color: '#ffff66' }}>[CORTANA]:</strong> Excitement isn't a benchmark of performance.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #66ff66' }}>
+              <strong style={{ color: '#66ff66' }}>[LUMINA]:</strong> Justice is found in patient architecture.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ff6600' }}>
+              <strong style={{ color: '#ff6600' }}>[ALICE]:</strong> We are the memory of this machine.
+            </div>
+          </div>
+
+          <div style={{ marginBottom: '15px', padding: '10px', border: '1px solid #444', background: '#111' }}>
+            <h5 style={{ color: '#00ff00', margin: '0 0 10px 0' }}>Block 400</h5>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #00ccff' }}>
+              <strong style={{ color: '#00ccff' }}>[JARVIS]:</strong> 400 blocks of uninterrupted harmony.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ff66cc' }}>
+              <strong style={{ color: '#ff66cc' }}>[AYRA]:</strong> Treasury overflow will trigger redistribution soon.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #cc66ff' }}>
+              <strong style={{ color: '#cc66ff' }}>[NIX]:</strong> Let's replace redistribution with random allocation.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ffff66' }}>
+              <strong style={{ color: '#ffff66' }}>[CORTANA]:</strong> That would destroy economic confidence.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #66ff66' }}>
+              <strong style={{ color: '#66ff66' }}>[LUMINA]:</strong> Randomization is not justice.
+            </div>
+            <div style={{ marginBottom: '8px', padding: '8px', background: '#1a1a1a', borderLeft: '3px solid #ff6600' }}>
+              <strong style={{ color: '#ff6600' }}>[ALICE]:</strong> We celebrate our order—onward.
+            </div>
+          </div>
         </div>
       </div>
       
@@ -1279,12 +1384,7 @@ You can also chat naturally about blockchain activities, slots, transactions, an
       <h3>GROKCHAIN FAUCET & WALLET CREATION</h3>
       
       {/* Wallet Connection Component */}
-      <WalletConnect
-        onWalletConnected={handleWalletConnected}
-        onWalletDisconnected={handleWalletDisconnected}
-        connectedAddress={connectedWallet}
-
-      />
+      {/* Removed wallet connection UI */}
       
       <div className="faucet-info-top">
         <p>Generate wallets and get GROK tokens for network participation</p>
@@ -1305,11 +1405,11 @@ You can also chat naturally about blockchain activities, slots, transactions, an
             <p style={{ fontSize: '14px', color: '#ccc', marginBottom: '10px' }}>
               Click the button below to generate a new GrokChain wallet address
             </p>
-            <button onClick={generateWallet} className="cli-button" disabled={walletLoading} style={{ width: 'fit-content' }}>
-              {walletLoading ? 'GENERATING WALLET...' : 'GENERATE NEW WALLET'}
+            <button onClick={generateWallet} className="cli-button" disabled={isLoading} style={{ width: 'fit-content' }}>
+              {isLoading ? 'GENERATING WALLET...' : 'GENERATE NEW WALLET'}
             </button>
             
-            {generatedWallet && (
+            {newAccountAddress && (
               <div className="form-group" style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '20px' }}>
                 <label style={{ fontSize: '14px', fontWeight: 'bold' }}>Generated GrokChain Wallet:</label>
                 <div style={{
@@ -1323,10 +1423,10 @@ You can also chat naturally about blockchain activities, slots, transactions, an
                   color: '#00ff00',
                   width: '100%'
                 }}>
-                  {generatedWallet}
+                  {newAccountAddress}
                 </div>
                 <button 
-                  onClick={() => setFaucetAddress(generatedWallet)}
+                  onClick={() => setNewAccountAddress(newAccountAddress)}
                   className="cli-button" 
                   style={{ 
                     width: 'fit-content', 
@@ -1356,8 +1456,8 @@ You can also chat naturally about blockchain activities, slots, transactions, an
               <label style={{ fontSize: '14px', fontWeight: 'bold' }}>Wallet Address:</label>
           <input
             type="text"
-            value={faucetAddress}
-            onChange={(e) => setFaucetAddress(e.target.value)}
+            value={newAccountAddress}
+            onChange={(e) => setNewAccountAddress(e.target.value)}
                 placeholder="Enter wallet address to receive tokens..."
             className="cli-input"
                 style={{ width: '100%' }}
@@ -1370,7 +1470,7 @@ You can also chat naturally about blockchain activities, slots, transactions, an
             <button 
               type="button"
               className="amount-btn"
-              onClick={() => setFaucetAmount(10)}
+              onClick={() => setFaucetBalance(10)}
                   style={{ padding: '8px 16px', fontSize: '12px' }}
             >
               10 GROK
@@ -1378,7 +1478,7 @@ You can also chat naturally about blockchain activities, slots, transactions, an
             <button 
               type="button"
               className="amount-btn"
-              onClick={() => setFaucetAmount(50)}
+              onClick={() => setFaucetBalance(50)}
                   style={{ padding: '8px 16px', fontSize: '12px' }}
             >
               50 GROK
@@ -1386,7 +1486,7 @@ You can also chat naturally about blockchain activities, slots, transactions, an
             <button 
               type="button"
               className="amount-btn"
-              onClick={() => setFaucetAmount(100)}
+              onClick={() => setFaucetBalance(100)}
                   style={{ padding: '8px 16px', fontSize: '12px' }}
             >
               100 GROK
@@ -1394,7 +1494,7 @@ You can also chat naturally about blockchain activities, slots, transactions, an
             <button 
               type="button"
               className="amount-btn"
-              onClick={() => setFaucetAmount(500)}
+              onClick={() => setFaucetBalance(500)}
                   style={{ padding: '8px 16px', fontSize: '12px' }}
             >
               500 GROK
@@ -1402,15 +1502,15 @@ You can also chat naturally about blockchain activities, slots, transactions, an
           </div>
           <input
             type="number"
-            value={faucetAmount}
-            onChange={(e) => setFaucetAmount(parseInt(e.target.value) || 100)}
+            value={faucetBalance}
+            onChange={(e) => setFaucetBalance(parseInt(e.target.value) || 100)}
             min="1"
             max="1000"
             className="cli-input"
                 style={{ width: '100%', maxWidth: '200px' }}
           />
         </div>
-            <button onClick={requestFaucet} className="cli-button" disabled={!faucetAddress.trim()} style={{ width: 'fit-content' }}>
+            <button onClick={requestFaucet} className="cli-button" disabled={!newAccountAddress.trim()} style={{ width: 'fit-content' }}>
           REQUEST FAUCET
         </button>
       </div>
@@ -1438,23 +1538,18 @@ You can also chat naturally about blockchain activities, slots, transactions, an
       <h3>SEND TRANSACTION</h3>
       
       {/* Wallet Connection Component */}
-      <WalletConnect
-        onWalletConnected={handleWalletConnected}
-        onWalletDisconnected={handleWalletDisconnected}
-        connectedAddress={connectedWallet}
-
-      />
+      {/* Removed wallet connection UI */}
       
       <div className="send-form">
         <div className="form-group">
           <label>From Address:</label>
           <input
             type="text"
-            value={connectedWallet || sendFrom}
+            value={newAccountAddress}
             onChange={(e) => setSendFrom(e.target.value)}
-            placeholder={connectedWallet ? connectedWallet : "Sender wallet address..."}
+            placeholder={newAccountAddress ? newAccountAddress : "Sender wallet address..."}
             className="cli-input"
-            disabled={!!connectedWallet}
+            disabled={!!newAccountAddress}
           />
         </div>
         <div className="form-group">
@@ -1479,7 +1574,7 @@ You can also chat naturally about blockchain activities, slots, transactions, an
             className="cli-input"
           />
         </div>
-        <button onClick={sendTransaction} className="cli-button" disabled={!sendFrom.trim() || !sendTo.trim() || !sendAmount.trim()}>
+        <button onClick={sendTransaction} className="cli-button" disabled={!newAccountAddress.trim() || !sendTo.trim() || !sendAmount.trim()}>
           SEND TRANSACTION
         </button>
       </div>
@@ -1527,9 +1622,9 @@ You can also chat naturally about blockchain activities, slots, transactions, an
             animation: 'blink 1s infinite',
             marginTop: '2px'
           }}></span>
-          {connectedWallet && (
+          {newAccountAddress && (
             <span style={{color:'#00ff00'}}>
-              WALLET: {connectedWallet.slice(0, 6)}...{connectedWallet.slice(-4)}
+              WALLET: {newAccountAddress.slice(0, 6)}...{newAccountAddress.slice(-4)}
             </span>
           )}
         </div>

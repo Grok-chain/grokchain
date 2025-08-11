@@ -1,20 +1,17 @@
+import { db } from './database';
+
 export type Account = { address: string; balance: number };
 export type Transaction = { from: string; to: string; amount: number; timestamp: number; hash?: string; fee?: number };
 export type Block = { height: number; producer: string; transactions: Transaction[]; timestamp: number; hash?: string };
 
-// Generate 20 unique names for the network (more realistic)
 const generateUniqueNames = (): string[] => {
-  const names = [];
-  const adjectives = ['cosmic', 'stellar', 'quantum', 'neural', 'digital', 'crypto', 'block', 'chain', 'grok', 'ai', 'smart', 'fast', 'secure', 'decentralized', 'autonomous', 'intelligent', 'conscious', 'evolving', 'adaptive', 'dynamic'];
-  const nouns = ['node', 'validator', 'wallet', 'user', 'trader', 'miner', 'staker', 'governor', 'developer', 'investor', 'analyst', 'researcher', 'architect', 'engineer', 'scientist', 'philosopher', 'explorer', 'pioneer', 'visionary', 'innovator'];
-  
-  for (let i = 0; i < 20; i++) {
-    const adj = adjectives[i % adjectives.length];
-    const noun = nouns[Math.floor(i / adjectives.length) % nouns.length];
-    const num = Math.floor(i / (adjectives.length * nouns.length)) + 1;
-    names.push(`${adj}${noun}${num}`);
-  }
-  return names;
+  const names = [
+    'alice', 'ayra', 'jarvis', 'cortana', 'lumina', 'nix',
+    'grover', 'nova', 'zen', 'echo', 'pulse', 'flux',
+    'orbit', 'stellar', 'cosmic', 'nebula', 'quasar', 'pulsar',
+    'galaxy', 'universe'
+  ];
+  return names.sort(() => Math.random() - 0.5);
 };
 
 export class GrokChain {
@@ -29,11 +26,60 @@ export class GrokChain {
   // Epoch & validator performance - Solana-like parameters
   epoch: number = 1;
   slotsPerEpoch: number = 432000; // Solana: ~432k slots per epoch (~2-3 days)
-  currentSlot: number = 4739; // Start with a realistic slot number
+  currentSlot: number = 265000; // Will be loaded from database
   validatorStats: Record<string, { produced: number, missed: number, totalSlots: number, performance?: number }> = {};
   
   constructor() {
+    this.currentSlot = this.loadPersistedSlot();
     this.initializeNetwork();
+  }
+
+  private loadPersistedSlot(): number {
+    try {
+      // Try to load from database first (most reliable for Railway)
+      const slotData = db.getSlotData();
+      if (slotData && slotData.currentSlot && !isNaN(Number(slotData.currentSlot))) {
+        console.log(`Loading persisted slot from database: ${slotData.currentSlot}`);
+        this.epoch = slotData.epoch;
+        return Number(slotData.currentSlot);
+      }
+    } catch (error: any) {
+      console.log('Could not load slot from database:', error.message);
+    }
+
+    // Try to load from environment variable as backup
+    const envSlot = process.env.CURRENT_SLOT;
+    if (envSlot && !isNaN(Number(envSlot))) {
+      console.log(`Loading persisted slot from env: ${envSlot}`);
+      return Number(envSlot);
+    }
+
+    // Fallback to a reasonable starting point
+    const fallbackSlot = 265000; // Start from where you mentioned it was
+    console.log(`Using fallback slot: ${fallbackSlot}`);
+    return fallbackSlot;
+  }
+
+  private persistSlot() {
+    try {
+      // Save to database (persistent across Railway builds)
+      db.saveSlotData({
+        currentSlot: this.currentSlot,
+        epoch: this.epoch,
+        lastUpdated: Date.now()
+      });
+      console.log(`Persisted slot ${this.currentSlot} to database`);
+    } catch (error: any) {
+      console.log('Could not persist slot to database:', error.message);
+      
+      // Fallback to environment variable (less reliable but better than nothing)
+      try {
+        process.env.CURRENT_SLOT = this.currentSlot.toString();
+        console.log(`Set environment variable CURRENT_SLOT to ${this.currentSlot}`);
+      } catch (envError: any) {
+        console.log('Could not set environment variable:', envError.message);
+      }
+    }
   }
   
   private initializeNetwork() {
@@ -180,6 +226,12 @@ export class GrokChain {
     });
     
     this.currentSlot++;
+    
+    // Persist the slot count every 10 slots to avoid too many writes
+    if (this.currentSlot % 10 === 0) {
+      this.persistSlot();
+    }
+    
     if (this.currentSlot >= this.slotsPerEpoch) {
       this.nextEpoch();
     }

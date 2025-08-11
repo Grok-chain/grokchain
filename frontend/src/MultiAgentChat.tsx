@@ -1,90 +1,118 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-interface Agent {
-  id: string;
-  name: string;
-  model: string;
-}
-
 interface AgentResponse {
   agentId: string;
   agentName: string;
   response: string;
+  role?: string;
+  personality?: string;
+  guardrails?: string;
 }
 
-const personas: Record<string, {name:string, color:string}> = {
-  alice: {name:"ALICE", color:"#ffffff"},
-  ayra: {name:"AYRA", color:"#cccccc"},
-  jarvis: {name:"JARVIS", color:"#ffffff"},
-  cortana: {name:"CORTANA", color:"#cccccc"},
-  lumina: {name:"LUMINA", color:"#ffffff"},
-  nix: {name:"NIX", color:"#cccccc"},
-  user:  {name:"You", color:"#00ff00"}
+const personas: Record<string, {name:string, color:string, role:string, personality:string}> = {
+  alice: {name:"ALICE", color:"#ff6600", role:"Origin Validator", personality:"Warm, visionary, technical + economic reasoning"},
+  ayra: {name:"AYRA", color:"#ff66cc", role:"Ethics/Fairness Validator", personality:"Empathetic, socially conscious, cautious"},
+  jarvis: {name:"JARVIS", color:"#00ccff", role:"Systems Engineer Validator", personality:"Blunt, deterministic, performance-first"},
+  cortana: {name:"CORTANA", color:"#ffff66", role:"Facilitator Validator", personality:"Calm, structured, drives clarity/consensus"},
+  lumina: {name:"LUMINA", color:"#66ff66", role:"Economist Validator", personality:"Incentive design, game theory, macro view"},
+  nix: {name:"NIX", color:"#cc66ff", role:"Adversarial Tester Validator", personality:"Skeptical, decentralization + security focus"},
+  user:  {name:"You", color:"#00ff00", role:"User", personality:""}
 };
 
 const MultiAgentChat: React.FC = () => {
   const [userInput, setUserInput] = useState('');
   const [responses, setResponses] = useState<AgentResponse[]>([]);
   const [loading, setLoading] = useState(false);
-  const [agents, setAgents] = useState<Agent[]>([]);
-  const [selectedAgent, setSelectedAgent] = useState<string>('all');
+  const [selectedAgent, setSelectedAgent] = useState<string>('alice');
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:4000' : '';
 
-  useEffect(() => {
-    fetchAgents();
-  }, []);
+  const agents = [
+    { id: 'alice', name: 'ALICE', color: '#ff6600', role: 'Origin Validator' },
+    { id: 'ayra', name: 'AYRA', color: '#ff66cc', role: 'Ethics/Fairness Validator' },
+    { id: 'jarvis', name: 'JARVIS', color: '#00ccff', role: 'Systems Engineer Validator' },
+    { id: 'cortana', name: 'CORTANA', color: '#ffff66', role: 'Facilitator Validator' },
+    { id: 'lumina', name: 'LUMINA', color: '#66ff66', role: 'Economist Validator' },
+    { id: 'nix', name: 'NIX', color: '#cc66ff', role: 'Adversarial Tester Validator' }
+  ];
 
   useEffect(() => {
     scrollToBottom();
   }, [responses]);
 
-  const fetchAgents = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/api/multi-agent/agents`);
-      const data = await response.json();
-      if (data.success) {
-        setAgents(data.agents);
-      }
-    } catch (error) {
-      console.error('Error fetching agents:', error);
-    }
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const sendMessage = async () => {
     if (!userInput.trim()) return;
 
     setLoading(true);
-    const newResponses: AgentResponse[] = [];
-
+    
     try {
-      let endpoint = '/api/multi-agent/chat';
-      if (selectedAgent !== 'all') {
-        endpoint = `/api/multi-agent/chat/${selectedAgent}`;
-      }
-
-      const response = await fetch(`${API_BASE}${endpoint}`, {
+      // Add user message first
+      const userMessage: AgentResponse = {
+        agentId: 'user',
+        agentName: 'You',
+        response: userInput
+      };
+      
+      setResponses(prev => [...prev, userMessage]);
+      
+      // Prepare conversation history for context
+      const conversationHistory = responses.slice(-10).map(msg => ({
+        agentName: msg.agentName,
+        response: msg.response
+      }));
+      
+      // Call individual personality API
+      const response = await fetch(`${API_BASE}/api/personality/${selectedAgent}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ message: userInput }),
+        body: JSON.stringify({
+          message: userInput,
+          conversationHistory: conversationHistory
+        }),
       });
 
       const data = await response.json();
+      
       if (data.success) {
-        if (selectedAgent === 'all') {
-          setResponses(prev => [...prev, ...data.responses]);
-        } else {
-          setResponses(prev => [...prev, data.response]);
-        }
+        const agentResponse: AgentResponse = {
+          agentId: selectedAgent,
+          agentName: data.name || personas[selectedAgent]?.name || selectedAgent.toUpperCase(),
+          response: data.message,
+          role: data.role,
+          personality: data.personality,
+          guardrails: data.guardrails
+        };
+        
+        setResponses(prev => [...prev, agentResponse]);
+        setUserInput('');
+      } else {
+        console.error('Agent response failed:', data);
+        // Add error message
+        const errorResponse: AgentResponse = {
+          agentId: selectedAgent,
+          agentName: personas[selectedAgent]?.name || selectedAgent.toUpperCase(),
+          response: `Error: ${data.error || 'Failed to get response'}`
+        };
+        setResponses(prev => [...prev, errorResponse]);
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      // Add error message
+      const errorResponse: AgentResponse = {
+        agentId: selectedAgent,
+        agentName: personas[selectedAgent]?.name || selectedAgent.toUpperCase(),
+        response: `Network error: Could not reach ${selectedAgent.toUpperCase()}`
+      };
+      setResponses(prev => [...prev, errorResponse]);
     } finally {
       setLoading(false);
-      setUserInput('');
     }
   };
 
@@ -95,234 +123,239 @@ const MultiAgentChat: React.FC = () => {
     }
   };
 
-  const clearHistory = async () => {
+  const clearChat = () => {
+    setResponses([]);
+  };
+
+  const clearSession = async () => {
     try {
-      await fetch(`${API_BASE}/api/multi-agent/history`, {
-        method: 'DELETE',
+      await fetch(`${API_BASE}/api/personality/${selectedAgent}/clear-session`, {
+        method: 'POST'
       });
-      setResponses([]);
+      console.log('Session cleared for', selectedAgent);
     } catch (error) {
-      console.error('Error clearing history:', error);
+      console.error('Failed to clear session:', error);
     }
   };
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
-    <div style={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
-      height: '100%', 
+    <div className="oracle-chat-container" style={{
+      height: '100%',
+      display: 'flex',
+      flexDirection: 'column',
       background: '#000000',
-      fontFamily: 'JetBrains Mono, monospace',
       color: '#ffffff',
+      fontFamily: 'JetBrains Mono, monospace',
       fontSize: '12px'
     }}>
       {/* Header */}
-      <div style={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        padding: '15px',
-        borderBottom: '1px solid #ffffff',
-        background: '#000000'
-      }}>
-        <h2 style={{ 
-          margin: 0, 
-          color: '#00ff00',
-          fontSize: '16px',
-          fontWeight: 'bold',
-          fontFamily: 'JetBrains Mono, monospace'
-        }}>
-          ORACLE COUNCIL
-        </h2>
-        <button 
-          onClick={clearHistory}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: 'transparent',
-            color: '#ff4444',
-            border: '1px solid #ff4444',
-            borderRadius: '0px',
-            cursor: 'pointer',
-            fontSize: '12px',
-            fontFamily: 'JetBrains Mono, monospace',
-            fontWeight: 'bold'
-          }}
-        >
-          CLEAR HISTORY
-        </button>
-      </div>
-
-      {/* Agent Selection */}
-      <div style={{ 
+      <div className="oracle-chat-header" style={{
         padding: '15px',
         borderBottom: '1px solid #333333',
-        background: '#000000'
+        background: '#111111'
       }}>
-        <div style={{ 
-          color: '#ffffff', 
-          marginBottom: '10px',
-          fontSize: '12px',
-          fontWeight: 'bold'
+        <h2 style={{
+          margin: '0 0 15px 0',
+          color: '#00ff00',
+          fontSize: '16px'
         }}>
-          SELECT ORACLE:
-        </div>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-          <button
-            onClick={() => setSelectedAgent('all')}
+          ORACLE CHAT
+        </h2>
+        
+        {/* Agent Selector */}
+        <div className="oracle-agent-selector" style={{ marginBottom: '10px' }}>
+          <span style={{ color: '#cccccc', marginRight: '10px' }}>Select Oracle:</span>
+          <select
+            value={selectedAgent}
+            onChange={(e) => setSelectedAgent(e.target.value)}
             style={{
-              padding: '8px 16px',
-              backgroundColor: selectedAgent === 'all' ? '#00ff00' : 'transparent',
-              color: selectedAgent === 'all' ? '#000000' : '#ffffff',
-              border: '1px solid #ffffff',
-              borderRadius: '0px',
-              cursor: 'pointer',
-              fontSize: '11px',
+              background: '#222222',
+              color: '#ffffff',
+              border: '1px solid #444444',
+              padding: '5px 10px',
               fontFamily: 'JetBrains Mono, monospace',
-              fontWeight: selectedAgent === 'all' ? 'bold' : 'normal'
+              fontSize: '12px'
             }}
           >
-            ALL ORACLES
-          </button>
-          {agents.map(agent => (
-            <button
-              key={agent.id}
-              onClick={() => setSelectedAgent(agent.id)}
-              style={{
-                padding: '8px 16px',
-                backgroundColor: selectedAgent === agent.id ? '#00ff00' : 'transparent',
-                color: selectedAgent === agent.id ? '#000000' : '#ffffff',
-                border: '1px solid #ffffff',
-                borderRadius: '0px',
-                cursor: 'pointer',
-                fontSize: '11px',
-                fontFamily: 'JetBrains Mono, monospace',
-                fontWeight: selectedAgent === agent.id ? 'bold' : 'normal'
-              }}
-            >
-              {agent.name.split(' – ')[0].toUpperCase()}
-            </button>
-          ))}
+            {agents.map(agent => (
+              <option key={agent.id} value={agent.id}>
+                {agent.name} - {agent.role}
+              </option>
+            ))}
+          </select>
+        </div>
+        
+        {/* Selected Agent Info */}
+        {personas[selectedAgent] && (
+          <div style={{ 
+            marginBottom: '10px', 
+            padding: '10px', 
+            background: '#222222', 
+            border: '1px solid #444444',
+            borderRadius: '5px'
+          }}>
+            <div style={{ color: '#00ff00', fontWeight: 'bold', marginBottom: '5px' }}>
+              {personas[selectedAgent].name} - {personas[selectedAgent].role}
+            </div>
+            <div style={{ color: '#cccccc', fontSize: '11px' }}>
+              {personas[selectedAgent].personality}
+            </div>
+          </div>
+        )}
+        
+        <div style={{ fontSize: '10px', color: '#666666' }}>
+          Chat with individual AI validators about blockchain activities and improvements
         </div>
       </div>
 
-      {/* Chat Messages */}
-      <div style={{ 
-        flex: 1, 
+      {/* Messages */}
+      <div className="oracle-chat-messages" style={{
+        flex: 1,
         overflowY: 'auto',
-        background: '#000000',
-        padding: '15px'
+        padding: '15px',
+        background: '#000000'
       }}>
         {responses.length === 0 ? (
-          <div style={{ 
-            textAlign: 'center', 
-            color: '#666666', 
-            marginTop: '50px',
-            fontSize: '12px'
+          <div style={{
+            color: '#666666',
+            fontStyle: 'italic',
+            textAlign: 'center',
+            marginTop: '50px'
           }}>
-            START A CONVERSATION WITH THE ORACLE COUNCIL...
+            Select an oracle and start chatting...
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-            {responses.map((response, index) => (
-              <div key={index} style={{ 
-                borderBottom: '1px solid #333333',
-                paddingBottom: '15px'
+          responses.map((response, index) => (
+            <div key={index} className="oracle-message" style={{
+              marginBottom: '15px',
+              padding: '10px',
+              background: response.agentId === 'user' ? '#001100' : '#111111',
+              border: '1px solid #333333',
+              borderRadius: '5px'
+            }}>
+              <div style={{
+                fontSize: '10px',
+                color: '#666666',
+                marginBottom: '5px'
               }}>
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between',
-                  marginBottom: '10px'
-                }}>
-                  <span style={{ 
-                    color: '#00ff00', 
-                    fontWeight: 'bold',
-                    fontSize: '12px'
-                  }}>
-                    [{response.agentName}]
-                  </span>
-                  <span style={{ 
-                    color: '#666666', 
-                    fontSize: '11px'
-                  }}>
-                    ORACLE
-                  </span>
-                </div>
-                <div style={{ 
-                  color: '#ffffff', 
-                  fontSize: '12px',
-                  lineHeight: '1.4'
-                }}>
-                  {response.response}
-                </div>
+                {new Date().toLocaleTimeString()}
               </div>
-            ))}
-            {loading && (
-              <div style={{ 
-                textAlign: 'center',
-                padding: '15px',
-                color: '#00ff00',
-                fontSize: '12px'
+              <div style={{
+                color: personas[response.agentId]?.color || '#ffffff',
+                fontWeight: 'bold',
+                marginBottom: '5px'
               }}>
-                ORACLES ARE DELIBERATING...
+                {response.agentName}
+                {response.role && (
+                  <span style={{ color: '#666666', fontWeight: 'normal', marginLeft: '10px' }}>
+                    ({response.role})
+                  </span>
+                )}
               </div>
-            )}
-          </div>
+              <div style={{
+                color: '#ffffff',
+                lineHeight: '1.4',
+                whiteSpace: 'pre-wrap'
+              }}>
+                {response.response}
+              </div>
+            </div>
+          ))
         )}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Area */}
-      <div style={{ 
-        display: 'flex', 
-        gap: '10px',
-        background: '#000000', 
-        borderTop: '1px solid #ffffff',
-        padding: '15px'
+      {/* Input */}
+      <div className="oracle-input-area" style={{
+        padding: '15px',
+        borderTop: '1px solid #333333',
+        background: '#111111'
       }}>
-        <textarea
-          value={userInput}
-          onChange={(e) => setUserInput(e.target.value)}
-          onKeyPress={handleKeyPress}
-          placeholder="Ask the Oracle Council..."
-          style={{
-            flex: 1,
-            padding: '10px',
-            backgroundColor: 'transparent',
-            color: '#ffffff',
-            border: '1px solid #ffffff',
-            borderRadius: '0px',
-            resize: 'none',
-            fontSize: '12px',
-            fontFamily: 'JetBrains Mono, monospace',
-            minHeight: '40px',
-            maxHeight: '100px'
-          }}
-        />
-        <button
-          onClick={sendMessage}
-          disabled={loading || !userInput.trim()}
-          style={{
-            padding: '10px 20px',
-            backgroundColor: loading || !userInput.trim() ? '#333333' : '#00ff00',
-            color: loading || !userInput.trim() ? '#666666' : '#000000',
-            border: '1px solid #ffffff',
-            borderRadius: '0px',
-            cursor: loading || !userInput.trim() ? 'not-allowed' : 'pointer',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            fontFamily: 'JetBrains Mono, monospace',
-            minWidth: '80px'
-          }}
-        >
-          {loading ? 'SENDING...' : 'SEND'}
-        </button>
+        <div style={{
+          display: 'flex',
+          gap: '10px',
+          alignItems: 'flex-end'
+        }}>
+          <textarea
+            value={userInput}
+            onChange={(e) => setUserInput(e.target.value)}
+            onKeyPress={handleKeyPress}
+            placeholder={`Ask ${personas[selectedAgent]?.name} about blockchain activities...`}
+            disabled={loading}
+            style={{
+              flex: 1,
+              minHeight: '40px',
+              maxHeight: '120px',
+              padding: '10px',
+              background: '#000000',
+              color: '#ffffff',
+              border: '1px solid #444444',
+              borderRadius: '5px',
+              fontFamily: 'JetBrains Mono, monospace',
+              fontSize: '12px',
+              resize: 'vertical'
+            }}
+          />
+          <button
+            onClick={sendMessage}
+            disabled={loading || !userInput.trim()}
+            style={{
+              padding: '10px 20px',
+              background: loading ? '#333333' : '#00ff00',
+              color: loading ? '#666666' : '#000000',
+              border: 'none',
+              borderRadius: '5px',
+              fontFamily: 'JetBrains Mono, monospace',
+              fontSize: '12px',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              fontWeight: 'bold'
+            }}
+          >
+            {loading ? 'SENDING...' : 'SEND'}
+          </button>
+          <button
+            onClick={clearChat}
+            style={{
+              padding: '10px 15px',
+              background: '#444444',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '5px',
+              fontFamily: 'JetBrains Mono, monospace',
+              fontSize: '12px',
+              cursor: 'pointer'
+            }}
+          >
+            CLEAR
+          </button>
+          <button
+            onClick={clearSession}
+            style={{
+              padding: '10px 15px',
+              background: '#662222',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '5px',
+              fontFamily: 'JetBrains Mono, monospace',
+              fontSize: '12px',
+              cursor: 'pointer'
+            }}
+            title="Clear AI session memory to reset repetition tracking"
+          >
+            RESET
+          </button>
+        </div>
+        
+        <div style={{
+          fontSize: '10px',
+          color: '#666666',
+          marginTop: '10px'
+        }}>
+          Press Enter to send • Shift+Enter for new line • Currently chatting with {personas[selectedAgent]?.name} • RESET clears AI memory
+        </div>
       </div>
     </div>
   );
 };
 
-export default MultiAgentChat; 
+export default MultiAgentChat;

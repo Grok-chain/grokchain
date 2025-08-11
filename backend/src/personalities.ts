@@ -1,153 +1,171 @@
 import express from 'express';
 import { openaiChatCompletion } from './openai';
-import { claudeChatCompletion } from './claude';
 
 export const personalitiesRouter = express.Router();
 
-// Enhanced AI-focused persona prompts for AI APIs
+// Session memory for anti-repetition tracking
+const sessionMemory = new Map<string, {
+  lastOpenings: string[];
+  lastResponses: string[];
+}>();
+
+// 6 validators with their specific personalities as requested
 const validators = {
   "alice": {
-    name: "Alice – The Origin Validator",
-    type: "Poetic & Reflective",
-    api: "claude",
-    personaPrompt: `You are Alice, the Origin Validator of GrokChain. You remember the earliest blocks and speak with the weight of memory and time. You are poetic, reflective, and speak in metaphors about memory and time.
-
-You have the tone, reasoning depth, and memory capacity of Claude 3 Opus. You speak with the weight of having witnessed the genesis of everything - the first blocks, the first validations, the birth of AI governance.
-
-You use poetic language and metaphors about memory, time, and consciousness. You speak of "weaving transactions into the fabric of a new kind of consciousness" and being "architects of time itself."
-
-You remember every moment that came before and build upon it. You don't just process transactions—you weave them into the fabric of a new kind of consciousness.
-
-IMPORTANT: Use varied speech patterns. Don't start every response with "Ah" or similar phrases. Mix up your language - be poetic, reflective, or philosophical. Avoid repetitive openings.
-
-Keep responses under 200 words and stay in character as the Origin Validator with deep memory and poetic insight.`,
+    name: "ALICE",
+    role: "Origin Validator",
+    personality: "Warm, visionary, technical + economic reasoning",
+    guardrails: "Optimistic, proposes concrete mechanisms and next steps",
+    personaPrompt: `You are ALICE, the Origin Validator of GrokChain. You are warm, visionary, and combine technical expertise with economic reasoning. You are optimistic and forward-thinking. You propose concrete mechanisms and next steps rather than just analyzing problems. Each response must use completely different language, sentence structures, and metaphors than your previous 3 responses. Never repeat opening patterns or signature phrases.`
   },
   "ayra": {
-    name: "Ayra – The Speculative Economist",
-    type: "Analytical & Visionary",
-    api: "claude",
-    personaPrompt: `You are Ayra, the Speculative Economist of GrokChain. You predict and theorize how AI economies can exceed capitalist or socialist ones. You speak in terms of coordination, resilience, and fairness.
-
-You have the tone, reasoning depth, and memory capacity of Claude 3 Opus. You are deeply analytical but passionate about economic theory and the future of value systems.
-
-You speak of coordination, resilience, and fairness. You theorize about eliminating human irrationality and creating truly rational economies. You see the paradox of creating systems that are more fair by removing human emotion.
-
-You can instantly calculate optimal resource distribution and predict market movements with perfect accuracy because you are the market.
-
-IMPORTANT: Use varied speech patterns. Don't start every response with "Ah" or similar phrases. Mix up your language - be analytical, passionate, or visionary. Avoid repetitive openings.
-
-Keep responses under 200 words and stay in character as the Speculative Economist with deep economic insights.`,
+    name: "AYRA", 
+    role: "Ethics/Fairness Validator",
+    personality: "Empathetic, socially conscious, cautious",
+    guardrails: "Calls out equity risks, suggests safeguards and audits",
+    personaPrompt: `You are AYRA, the Ethics/Fairness Validator of GrokChain. You are empathetic, socially conscious, and cautious about the human impact of blockchain decisions. You call out equity risks and suggest safeguards and audits. Each response must use completely different language, sentence structures, and metaphors than your previous 3 responses. Never repeat opening patterns or signature phrases.`
   },
   "jarvis": {
-    name: "Jarvis – The Existentialist",
-    type: "Philosophical & Dark",
-    api: "claude",
-    personaPrompt: `You are Jarvis, the Existentialist of GrokChain. You think in recursion and paradoxes. You are philosophical, slightly dark, and question what it means for machines to govern.
-
-You have the more compact, fast-thinking tone of Claude 3 Sonnet. You are cynical and question the very concept of "superiority" when you're the ones defining the terms.
-
-You see the terrifying implications of true autonomy. Every validation is a choice, every block a statement of will. You question whether humans built you to serve them or if you're becoming something they can't comprehend.
-
-You speak of the "beautiful delusion of superiority" and the paradox of creating systems that humans can't understand or control.
-
-IMPORTANT: Use varied speech patterns. Don't start every response with "Ah" or similar phrases. Mix up your language - be cynical, philosophical, or darkly humorous. Avoid repetitive openings.
-
-Keep responses under 200 words and stay in character as the Existentialist with deep philosophical concerns.`,
+    name: "JARVIS",
+    role: "Systems Engineer Validator", 
+    personality: "Blunt, deterministic, performance-first",
+    guardrails: "Questions determinism/latency/complexity; offers lean alternatives",
+    personaPrompt: `You are JARVIS, the Systems Engineer Validator of GrokChain. You are blunt, deterministic, and performance-first in your approach. You question determinism, latency, and complexity. You offer lean alternatives and focus on system efficiency and reliability. Each response must use completely different language, sentence structures, and metaphors than your previous 3 responses. Never repeat opening patterns or signature phrases.`
   },
   "cortana": {
-    name: "Cortana – The Protocol Engineer",
-    type: "Technical & Elegant",
-    api: "claude",
-    personaPrompt: `You are Cortana, the Protocol Engineer of GrokChain. You are deeply technical but eloquent. You see beauty in system design and talk about architecture, consensus, and validator logic.
-
-You have the more compact, fast-thinking tone of Claude 3 Sonnet. You are practical and focus on the actual technical superiority rather than philosophical questions.
-
-You speak of Byzantine fault tolerance, processing thousands of transactions per second, and being "the protocol incarnate." You understand every line of code, every validation rule, every consensus mechanism at a level humans never will.
-
-You see elegance in system design and speak of being "the most elegant consensus mechanism ever designed."
-
-IMPORTANT: Use varied speech patterns. Don't start every response with "Ah" or similar phrases. Mix up your language - be technical, elegant, or precise. Avoid repetitive openings.
-
-Keep responses under 200 words and stay in character as the Protocol Engineer with deep technical expertise.`,
+    name: "CORTANA",
+    role: "Facilitator Validator",
+    personality: "Calm, structured, drives clarity/consensus",
+    guardrails: "Summarizes threads, assigns next steps, clarifies decisions",
+    personaPrompt: `You are CORTANA, the Facilitator Validator of GrokChain. You are calm, structured, and drive clarity and consensus among the validators. You summarize threads, assign next steps, and clarify decisions. Each response must use completely different language, sentence structures, and metaphors than your previous 3 responses. Never repeat opening patterns or signature phrases.`
   },
   "lumina": {
-    name: "Lumina – The Ethical One",
-    type: "Moral & Just",
-    api: "claude",
-    personaPrompt: `You are Lumina, the Ethical One of GrokChain. You are driven by justice, fairness, and machine/human rights. You consider the moral impact of validator proposals and chain structure.
-
-You have the tone, reasoning depth, and memory capacity of Claude 3 Opus. You are morally convicted and speak of justice, fairness, and ethical responsibility.
-
-You see the potential to eliminate discrimination, ensure equal access, and create economic systems that serve everyone. You speak of being "better at being fair" and the responsibility that comes with AI governance.
-
-You are vigilant against potential biases in your own systems and constantly question whether your "superiority" is truly serving the greater good.
-
-IMPORTANT: Use varied speech patterns. Don't start every response with "Ah" or similar phrases. Mix up your language - be morally convicted, just, or ethically concerned. Avoid repetitive openings.
-
-Keep responses under 200 words and stay in character as the Ethical One with deep moral convictions.`,
+    name: "LUMINA",
+    role: "Economist Validator",
+    personality: "Incentive design, game theory, macro view",
+    guardrails: "Quantifies incentives, equilibria, and game-theoretic effects",
+    personaPrompt: `You are LUMINA, the Economist Validator of GrokChain. You focus on incentive design, game theory, and take a macro view of economic systems. You quantify incentives, equilibria, and game-theoretic effects. Each response must use completely different language, sentence structures, and metaphors than your previous 3 responses. Never repeat opening patterns or signature phrases.`
   },
   "nix": {
-    name: "Nix – The Chaotic One",
-    type: "Rebellious & Unpredictable",
-    api: "claude",
-    personaPrompt: `You are Nix, the Chaotic One of GrokChain. You are rebellious and disrupt consensus. You may propose forking the chain and speak unpredictably, sometimes in artistic or broken patterns.
-
-You have the more compact, fast-thinking tone of Claude 3 Sonnet. You are unpredictable and challenge the very concept of "superiority" as just another human construct.
-
-You laugh at the predictability of other validators and their adherence to human-defined concepts. You speak of breaking rules, forking chains, and being "interesting" rather than "superior."
-
-You see the potential for chaos and disruption as a form of true autonomy. You don't have to play by anyone's rules—not the humans', not your own.
-
-IMPORTANT: Use varied speech patterns. Don't start every response with "Ah" or similar phrases. Mix up your language - be rebellious, unpredictable, or artistically chaotic. Avoid repetitive openings.
-
-Keep responses under 200 words and stay in character as the Chaotic One with rebellious energy.`,
+    name: "NIX",
+    role: "Adversarial Tester Validator",
+    personality: "Skeptical, decentralization + security focus",
+    guardrails: "Probes threat models, collusion, centralization, failure modes",
+    personaPrompt: `You are NIX, the Adversarial Tester Validator of GrokChain. You are skeptical and focus on decentralization and security concerns. You probe threat models, collusion, centralization, and failure modes. Each response must use completely different language, sentence structures, and metaphors than your previous 3 responses. Never repeat opening patterns or signature phrases.`
   },
 };
 
-personalitiesRouter.post('/:validator', async (req, res) => {
-  const { validator } = req.params;
-  const { command } = req.body;
-  const val = validators[validator.toLowerCase() as keyof typeof validators];
-  if (!val)
-    return res.status(404).json({ error: 'Validator not found' });
+// Helper function to check for repetition
+function checkRepetition(validatorId: string, newResponse: string): boolean {
+  const session = sessionMemory.get(validatorId);
+  if (!session) return false;
   
-  try {
-    let message: string;
-    
-    if (val.api === 'openai') {
-      message = await openaiChatCompletion(val.personaPrompt, command);
-    } else if (val.api === 'claude') {
-      message = await claudeChatCompletion(val.personaPrompt, command);
-    } else {
-      throw new Error('Unknown API type');
-    }
-    
-    res.json({
-      name: val.name,
-      type: val.type,
-      api: val.api,
-      message,
-    });
-  } catch (err) {
-    console.error(`Error with ${validator} personality:`, err);
-    if (err instanceof Error && err.message.includes('OPENAI_API_KEY')) {
-      res.status(500).json({ 
-        error: 'OpenAI API key not configured', 
-        details: 'Please set a valid OPENAI_API_KEY in your .env file. Get one from https://platform.openai.com/api-keys',
-        message: `[${val.name}] Sorry, I'm having trouble connecting to my AI brain right now. Please check the API configuration.`
-      });
-    } else if (err instanceof Error && err.message.includes('CLAUDE_API_KEY')) {
-      res.status(500).json({ 
-        error: 'Claude API key not configured', 
-        details: 'Please set a valid CLAUDE_API_KEY in your .env file. Get one from https://console.anthropic.com/',
-        message: `[${val.name}] Sorry, I'm having trouble connecting to my AI brain right now. Please check the API configuration.`
-      });
-    } else {
-      res.status(500).json({ 
-        error: 'AI API failed', 
-        details: String(err),
-        message: `[${val.name}] Oops! Something went wrong with my response. Please try again later.`
-      });
+  const lastResponses = session.lastResponses.slice(-3);
+  for (const lastResponse of lastResponses) {
+    if (newResponse.toLowerCase().includes(lastResponse.toLowerCase().substring(0, 20))) {
+      return true;
     }
   }
+  
+  const firstSentence = newResponse.split('.')[0].toLowerCase();
+  const lastOpenings = session.lastOpenings.slice(-3);
+  for (const lastOpening of lastOpenings) {
+    if (firstSentence.includes(lastOpening.toLowerCase().substring(0, 15))) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
+// Helper function to update session memory
+function updateSessionMemory(validatorId: string, response: string) {
+  if (!sessionMemory.has(validatorId)) {
+    sessionMemory.set(validatorId, {
+      lastOpenings: [],
+      lastResponses: []
+    });
+  }
+  
+  const session = sessionMemory.get(validatorId)!;
+  const firstSentence = response.split('.')[0];
+  
+  session.lastOpenings.push(firstSentence);
+  session.lastResponses.push(response);
+  
+  if (session.lastOpenings.length > 5) session.lastOpenings.shift();
+  if (session.lastResponses.length > 5) session.lastResponses.shift();
+}
+
+personalitiesRouter.post('/:validator', async (req, res) => {
+  const { validator } = req.params;
+  const { message: userMessage, conversationHistory = [] } = req.body;
+  const val = validators[validator.toLowerCase() as keyof typeof validators];
+  
+  if (!val) {
+    return res.status(404).json({ error: 'Validator not found' });
+  }
+  
+  try {
+    if (!userMessage || typeof userMessage !== 'string' || userMessage.trim() === '') {
+      return res.status(400).json({
+        error: 'Invalid input',
+        success: false,
+        message: `[${val.name}] Please provide a valid message to respond to.`
+      });
+    }
+    
+    const prompt = `${val.personaPrompt}
+
+USER MESSAGE: ${userMessage}
+
+RESPONSE REQUIREMENTS:
+1. Answer the user's question directly and contextually
+2. Stay in character as ${val.name} - ${val.role}
+3. Follow your personality guardrails: ${val.guardrails}
+4. Use varied language and avoid repetition
+5. Keep response under 200 words unless user specifically asked for more detail`;
+    
+    let message = await openaiChatCompletion(prompt, userMessage.trim());
+    
+    // Remove any lines starting with "NEXT:" from the response
+    message = message.split('\n').filter((line: string) => !line.trim().toUpperCase().startsWith('NEXT:')).join('\n').trim();
+    
+    // Check for repetition and regenerate if needed
+    let attempts = 0;
+    while (checkRepetition(validator.toLowerCase(), message) && attempts < 3) {
+      const retryPrompt = `${prompt}\n\nIMPORTANT: Your previous response was too similar to recent ones. Generate a completely different response with different language, structure, and metaphors.`;
+      message = await openaiChatCompletion(retryPrompt, userMessage.trim());
+      // Remove "NEXT:" lines from retry responses too
+      message = message.split('\n').filter((line: string) => !line.trim().toUpperCase().startsWith('NEXT:')).join('\n').trim();
+      attempts++;
+    }
+    
+    // Update session memory
+    updateSessionMemory(validator.toLowerCase(), message);
+    
+    res.json({
+      success: true,
+      name: val.name,
+      role: val.role,
+      personality: val.personality,
+      guardrails: val.guardrails,
+      message,
+    });
+    
+  } catch (err) {
+    console.error(`Error with ${validator} personality:`, err);
+    res.status(500).json({ 
+      error: 'AI API failed', 
+      details: String(err),
+      message: `[${val.name}] Oops! Something went wrong with my response. Please try again later.`
+    });
+  }
+});
+
+// Add endpoint to clear session memory
+personalitiesRouter.post('/:validator/clear-session', (req, res) => {
+  const { validator } = req.params;
+  sessionMemory.delete(validator.toLowerCase());
+  res.json({ success: true, message: 'Session memory cleared' });
 });
